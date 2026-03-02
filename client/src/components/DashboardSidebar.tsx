@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import {
     LayoutDashboard,
     Calendar,
@@ -15,7 +16,10 @@ import {
     LogOut,
     Menu,
     Bell,
-    BellRing
+    BellRing,
+    Moon,
+    Sun,
+    Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -45,11 +49,11 @@ function NavItem({ href, label, icon: Icon, isActive, onClick }: { href: string;
             className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
-                    ? "bg-[#AC1212] text-white shadow-md"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-[#AC1212]"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:bg-[#AC1212] hover:text-white"
             )}
         >
-            <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-gray-500")} />
+            <Icon className={cn("w-5 h-5", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
             {label}
         </Link>
     );
@@ -60,6 +64,7 @@ function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
     const pathname = usePathname();
     const router = useRouter();
     const { signOut, user } = useAuth();
+    const { theme, toggleTheme } = useTheme();
 
     const handleLogout = async () => {
         try {
@@ -73,14 +78,14 @@ function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
-            <SheetContent side="left" className="w-72 p-0 border-r bg-white shadow-xl">
+            <SheetContent side="left" className="w-72 p-0 border-r bg-background shadow-xl">
                 <div className="flex flex-col h-full">
                     {/* Logo Section */}
-                    <div className="h-16 flex items-center gap-3 px-6 border-b border-gray-200">
-                        <div className="w-9 h-9 bg-gradient-to-br from-[#AC1212] to-[#8a0f0f] rounded-lg flex items-center justify-center shadow-md">
-                            <Calendar className="w-5 h-5 text-white" />
+                    <div className="h-16 flex items-center gap-3 px-6 border-b border-border">
+                        <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shadow-md">
+                            <Calendar className="w-5 h-5 text-primary-foreground" />
                         </div>
-                        <span className="font-bold text-gray-900 text-lg">Eventmate</span>
+                        <span className="font-bold text-foreground text-lg">Eventmate</span>
                     </div>
 
                     {/* Navigation */}
@@ -102,28 +107,50 @@ function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                         </nav>
                     </ScrollArea>
 
-                    <Separator className="bg-gray-200" />
+                    <Separator />
+
+                    {/* Theme Toggle */}
+                    <div className="p-4 border-b">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={toggleTheme}
+                            className="w-full flex items-center justify-center gap-2"
+                        >
+                            {theme === 'light' ? (
+                                <>
+                                    <Moon className="w-4 h-4" />
+                                    <span>Dark Mode</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Sun className="w-4 h-4" />
+                                    <span>Light Mode</span>
+                                </>
+                            )}
+                        </Button>
+                    </div>
 
                     {/* User Section */}
-                    <div className="p-4 bg-gray-50">
+                    <div className="p-4 bg-secondary">
                         <div className="flex items-center gap-3 mb-3">
-                            <Avatar className="h-10 w-10 border-2 border-gray-200">
-                                <AvatarFallback className="bg-[#AC1212] text-white font-medium">
+                            <Avatar className="h-10 w-10 border-2 border-border">
+                                <AvatarFallback className="bg-primary text-primary-foreground font-medium">
                                     A
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                <p className="text-sm font-semibold text-secondary-foreground truncate">
                                     alemayehu wasie
                                 </p>
-                                <p className="text-xs text-gray-500 truncate">
+                                <p className="text-xs text-muted-foreground truncate">
                                     alemayehu@eventmate.com
                                 </p>
                             </div>
                         </div>
                         <div className="flex gap-2">
                             <Link href="/profile" className="flex-1" onClick={onClose}>
-                                <Button variant="outline" size="sm" className="w-full bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-[#AC1212]">
+                                <Button variant="outline" size="sm" className="w-full">
                                     <Settings className="w-4 h-4 mr-2" />
                                     Profile
                                 </Button>
@@ -132,7 +159,7 @@ function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleLogout}
-                                className="text-gray-500 hover:text-[#AC1212] hover:bg-red-50"
+                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                             >
                                 <LogOut className="w-4 h-4" />
                             </Button>
@@ -149,6 +176,7 @@ function DesktopSidebar() {
     const pathname = usePathname();
     const router = useRouter();
     const { signOut, user } = useAuth();
+    const { theme, toggleTheme } = useTheme();
 
     const handleLogout = async () => {
         try {
@@ -160,14 +188,14 @@ function DesktopSidebar() {
     };
 
     return (
-        <aside className="fixed top-0 left-0 z-40 h-screen w-64 bg-white border-r border-gray-200 shadow-lg">
+        <aside className="fixed top-0 left-0 z-40 h-screen w-64 bg-background border-r border-border shadow-lg">
             <div className="flex flex-col h-full">
                 {/* Logo Section */}
-                <div className="h-16 flex items-center gap-3 px-6 border-b border-gray-200">
-                    <div className="w-9 h-9 bg-gradient-to-br from-[#AC1212] to-[#8a0f0f] rounded-lg flex items-center justify-center shadow-md">
-                        <Calendar className="w-5 h-5 text-white" />
+                <div className="h-16 flex items-center gap-3 px-6 border-b border-border">
+                    <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shadow-md">
+                        <Calendar className="w-5 h-5 text-primary-foreground" />
                     </div>
-                    <span className="font-bold text-gray-900 text-lg">Eventmate</span>
+                    <span className="font-bold text-foreground text-lg">Eventmate</span>
                 </div>
 
                 {/* Navigation */}
@@ -188,28 +216,48 @@ function DesktopSidebar() {
                     </nav>
                 </ScrollArea>
 
-                <Separator className="bg-gray-200" />
+                <Separator />
 
-                {/* User Section */}
-                <div className="p-4 bg-gray-50">
+                {/* Theme Toggle & User Section */}
+                <div className="p-4 bg-secondary">
+                    <div className="flex items-center justify-center mb-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={toggleTheme}
+                            className="w-full flex items-center justify-center gap-2"
+                        >
+                            {theme === 'light' ? (
+                                <>
+                                    <Moon className="w-4 h-4" />
+                                    <span>Dark Mode</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Sun className="w-4 h-4" />
+                                    <span>Light Mode</span>
+                                </>
+                            )}
+                        </Button>
+                    </div>
                     <div className="flex items-center gap-3 mb-3">
-                        <Avatar className="h-10 w-10 border-2 border-gray-200">
-                            <AvatarFallback className="bg-[#AC1212] text-white font-medium">
+                        <Avatar className="h-10 w-10 border-2 border-border">
+                            <AvatarFallback className="bg-primary text-primary-foreground font-medium">
                                 A
                             </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 truncate">
+                            <p className="text-sm font-semibold text-secondary-foreground truncate">
                                 alemayehu wasie
                             </p>
-                            <p className="text-xs text-gray-500 truncate">
+                            <p className="text-xs text-muted-foreground truncate">
                                 alemayehu@eventmate.com
                             </p>
                         </div>
                     </div>
                     <div className="flex gap-2">
                         <Link href="/profile" className="flex-1">
-                            <Button variant="outline" size="sm" className="w-full bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-[#AC1212]">
+                            <Button variant="outline" size="sm" className="w-full">
                                 <Settings className="w-4 h-4 mr-2" />
                                 Profile
                             </Button>
@@ -218,7 +266,7 @@ function DesktopSidebar() {
                             variant="ghost"
                             size="sm"
                             onClick={handleLogout}
-                            className="text-gray-500 hover:text-[#AC1212] hover:bg-red-50"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         >
                             <LogOut className="w-4 h-4" />
                         </Button>
@@ -243,27 +291,27 @@ export default function DashboardSidebar({ children }: SidebarProps) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-muted/50">
             {/* Mobile Header */}
-            <header className="lg:hidden fixed top-0 left-0 right-0 z-30 h-16 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between px-4">
+            <header className="lg:hidden fixed top-0 left-0 right-0 z-30 h-16 bg-background border-b border-border shadow-sm flex items-center justify-between px-4">
                 <div className="flex items-center gap-2">
                     <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                         <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-gray-700">
+                            <Button variant="ghost" size="icon" className="text-foreground">
                                 <Menu className="w-5 h-5" />
                             </Button>
                         </SheetTrigger>
                         <MobileSidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
                     </Sheet>
                     <Link href="/dashboard" className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-[#AC1212] to-[#8a0f0f] rounded-lg flex items-center justify-center">
-                            <Calendar className="w-4 h-4 text-white" />
+                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <Calendar className="w-4 h-4 text-primary-foreground" />
                         </div>
-                        <span className="font-bold text-gray-900">Eventmate</span>
+                        <span className="font-bold text-foreground">Eventmate</span>
                     </Link>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="text-gray-600 hover:text-[#AC1212] hover:bg-gray-100">
+                    <Button variant="ghost" size="icon" className="text-foreground hover:text-primary hover:bg-accent">
                         <Bell className="w-5 h-5" />
                     </Button>
                 </div>

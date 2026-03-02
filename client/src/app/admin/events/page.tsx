@@ -62,10 +62,10 @@ export default function AdminEventsPage() {
 
     const getStatusBadge = (status: string) => {
         const styles: Record<string, string> = {
-            approved: 'bg-green-100 text-green-700 border-green-200',
-            pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-            rejected: 'bg-red-100 text-red-700 border-red-200',
-            draft: 'bg-gray-100 text-gray-700 border-gray-200',
+            approved: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
+            pending: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
+            rejected: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+            draft: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
         };
         return styles[status] || styles.draft;
     };
@@ -89,8 +89,8 @@ export default function AdminEventsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Event Management</h1>
-                    <p className="text-gray-500 mt-1">Approve, manage, and moderate events</p>
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Event Management</h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Approve, manage, and moderate events</p>
                 </div>
             </div>
 
@@ -100,25 +100,11 @@ export default function AdminEventsPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total Events</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{mockEvents.length}</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Events</p>
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{mockEvents.length}</p>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
-                                <Calendar className="w-6 h-6 text-gray-600" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-md transition-shadow">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-500">Pending Review</p>
-                                <p className="text-3xl font-bold text-yellow-600 mt-1">{pendingCount}</p>
-                            </div>
-                            <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
-                                <Clock className="w-6 h-6 text-yellow-600" />
+                            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                <Calendar className="w-6 h-6 text-slate-600 dark:text-slate-400" />
                             </div>
                         </div>
                     </CardContent>
@@ -128,11 +114,11 @@ export default function AdminEventsPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Approved</p>
-                                <p className="text-3xl font-bold text-green-600 mt-1">{approvedCount}</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Pending Review</p>
+                                <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{pendingCount}</p>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-                                <CheckCircle className="w-6 h-6 text-green-600" />
+                            <div className="w-12 h-12 rounded-xl bg-yellow-50 dark:bg-yellow-900/30 flex items-center justify-center">
+                                <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                             </div>
                         </div>
                     </CardContent>
@@ -142,11 +128,25 @@ export default function AdminEventsPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Rejected</p>
-                                <p className="text-3xl font-bold text-red-600 mt-1">{rejectedCount}</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Approved</p>
+                                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{approvedCount}</p>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
-                                <XCircle className="w-6 h-6 text-red-600" />
+                            <div className="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
+                                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-md transition-shadow">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Rejected</p>
+                                <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{rejectedCount}</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
+                                <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
                             </div>
                         </div>
                     </CardContent>
@@ -154,11 +154,11 @@ export default function AdminEventsPage() {
             </div>
 
             {/* Filters */}
-            <Card className="border-gray-200 shadow-sm">
+            <Card className="border-slate-200 dark:border-slate-700 shadow-sm">
                 <CardContent className="pt-6">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                             <Input
                                 placeholder="Search events..."
                                 value={searchQuery}
@@ -198,14 +198,14 @@ export default function AdminEventsPage() {
             </Card>
 
             {/* Events Table */}
-            <Card className="border-gray-200 shadow-sm">
-                <CardHeader className="border-b">
+            <Card className="border-slate-200 dark:border-slate-700 shadow-sm">
+                <CardHeader className="border-b dark:border-slate-700">
                     <CardTitle className="text-xl">All Events</CardTitle>
                     <CardDescription>{filteredEvents.length} events found</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
-                        <TableHeader className="bg-gray-50">
+                        <TableHeader className="bg-slate-50 dark:bg-slate-800">
                             <TableRow>
                                 <TableHead className="font-semibold">Event</TableHead>
                                 <TableHead className="font-semibold">Organizer</TableHead>
@@ -221,25 +221,25 @@ export default function AdminEventsPage() {
                             {filteredEvents.map((event) => {
                                 const StatusIcon = getStatusIcon(event.status);
                                 return (
-                                    <TableRow key={event.id} className="hover:bg-gray-50/50">
+                                    <TableRow key={event.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                                         <TableCell>
-                                            <span className="font-medium text-gray-900">{event.title}</span>
+                                            <span className="font-medium text-slate-900 dark:text-white">{event.title}</span>
                                         </TableCell>
-                                        <TableCell className="text-gray-600">{event.organizer}</TableCell>
+                                        <TableCell className="text-slate-600 dark:text-slate-300">{event.organizer}</TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className="bg-gray-50">
+                                            <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white">
                                                 {event.category}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-gray-600">{event.date}</TableCell>
+                                        <TableCell className="text-slate-600 dark:text-slate-300">{event.date}</TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-1 text-gray-600">
+                                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                                                 <MapPin className="w-4 h-4" />
                                                 {event.location}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-1 text-gray-600">
+                                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                                                 <Users className="w-4 h-4" />
                                                 {event.registered}/{event.capacity}
                                             </div>
@@ -252,24 +252,24 @@ export default function AdminEventsPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center justify-end gap-1">
-                                                <Button variant="ghost" size="icon" className="hover:bg-gray-100">
-                                                    <Eye className="w-4 h-4 text-gray-600" />
+                                                <Button variant="ghost" size="icon" className="hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                    <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" className="hover:bg-gray-100">
-                                                    <Edit className="w-4 h-4 text-gray-600" />
+                                                <Button variant="ghost" size="icon" className="hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                    <Edit className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                                                 </Button>
                                                 {event.status === 'pending' && (
                                                     <>
-                                                        <Button variant="ghost" size="icon" className="hover:bg-green-50">
-                                                            <CheckCircle className="w-4 h-4 text-green-500" />
+                                                        <Button variant="ghost" size="icon" className="hover:bg-green-50 dark:hover:bg-green-900/20">
+                                                            <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400" />
                                                         </Button>
-                                                        <Button variant="ghost" size="icon" className="hover:bg-red-50">
-                                                            <XCircle className="w-4 h-4 text-red-500" />
+                                                        <Button variant="ghost" size="icon" className="hover:bg-red-50 dark:hover:bg-red-900/20">
+                                                            <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
                                                         </Button>
                                                     </>
                                                 )}
-                                                <Button variant="ghost" size="icon" className="hover:bg-red-50">
-                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                <Button variant="ghost" size="icon" className="hover:bg-red-50 dark:hover:bg-red-900/20">
+                                                    <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
                                                 </Button>
                                             </div>
                                         </TableCell>

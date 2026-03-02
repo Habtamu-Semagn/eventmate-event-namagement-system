@@ -48,7 +48,7 @@ export default function EventFilter({ onFilterChange }: EventFilterProps) {
     };
 
     return (
-        <div className="mx-auto mb-8 mt-8 flex flex-wrap items-center gap-4 rounded-lg bg-white p-6 shadow-md max-w-[1200px]">
+        <div className="mx-auto mb-8 mt-8 flex flex-wrap items-center gap-4 rounded-lg bg-white dark:bg-slate-800 p-6 shadow-md max-w-[1200px]">
             <div className="relative min-w-[200px] flex-1">
                 <Input
                     type="text"
@@ -61,7 +61,7 @@ export default function EventFilter({ onFilterChange }: EventFilterProps) {
             </div>
 
             <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600">Category:</span>
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Category:</span>
                 <Select value={category} onValueChange={handleCategoryChange}>
                     <SelectTrigger className="w-[150px]">
                         <SelectValue placeholder="Select category" />
@@ -77,7 +77,7 @@ export default function EventFilter({ onFilterChange }: EventFilterProps) {
             </div>
 
             <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600">Location:</span>
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Location:</span>
                 <Select value={location} onValueChange={handleLocationChange}>
                     <SelectTrigger className="w-[150px]">
                         <SelectValue placeholder="Select location" />

@@ -83,7 +83,7 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-8">
             <div className="mx-auto max-w-6xl px-6">
                 {/* Profile Header - Clean Design */}
                 <div className="flex items-center gap-6 mb-8">
@@ -97,8 +97,8 @@ export default function ProfilePage() {
                         <h1 className="text-2xl font-bold text-gray-900">
                             {user?.displayName || mockUserData.displayName}
                         </h1>
-                        <p className="text-gray-500">{user?.email || mockUserData.email}</p>
-                        <Badge variant="outline" className="mt-1 border-gray-300 text-gray-600">
+                        <p className="text-slate-500 dark:text-slate-400">{user?.email || mockUserData.email}</p>
+                        <Badge variant="outline" className="mt-1 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300">
                             {getRoleLabel(mockUserData.role)}
                         </Badge>
                     </div>
@@ -124,7 +124,7 @@ export default function ProfilePage() {
                                 <Separator />
                                 <Button
                                     variant="outline"
-                                    className="w-full border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-200"
+                                    className="w-full border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800"
                                     onClick={() => signOut()}
                                 >
                                     <LogOut className="w-4 h-4 mr-2" />
@@ -137,12 +137,12 @@ export default function ProfilePage() {
                     {/* Right Content - Events */}
                     <div className="lg:col-span-3 space-y-6">
                         <Tabs defaultValue="registered" className="space-y-4">
-                            <TabsList className="bg-gray-100">
-                                <TabsTrigger value="registered" className="data-[state=active]:bg-gray-800 data-[state=active]:text-white">
+                            <TabsList className="bg-slate-100 dark:bg-slate-800">
+                                <TabsTrigger value="registered" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white dark:data-[state=active]:bg-[#AC1212]">
                                     <Ticket className="w-4 h-4 mr-2" />
                                     Registered
                                 </TabsTrigger>
-                                <TabsTrigger value="organized" className="data-[state=active]:bg-gray-800 data-[state=active]:text-white">
+                                <TabsTrigger value="organized" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white dark:data-[state=active]:bg-[#AC1212]">
                                     <Calendar className="w-4 h-4 mr-2" />
                                     My Events
                                 </TabsTrigger>

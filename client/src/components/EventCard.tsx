@@ -91,7 +91,7 @@ export default function EventCard({ event, onRSVP, isRegistered }: EventCardProp
     };
 
     return (
-        <div className="group overflow-hidden rounded-2xl bg-white shadow-md transition-all hover:-translate-y-1 hover:shadow-xl">
+        <div className="group overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-md transition-all hover:-translate-y-1 hover:shadow-xl">
             <div
                 className="relative h-48 w-full"
                 style={{ background: categoryColors[event.category] || '#AC1212' }}
@@ -99,7 +99,7 @@ export default function EventCard({ event, onRSVP, isRegistered }: EventCardProp
                 <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-6xl">🎉</span>
                 </div>
-                <span className="absolute left-4 top-4 rounded-full bg-white/90 px-4 py-1.5 text-sm font-semibold uppercase text-gray-900">
+                <span className="absolute left-4 top-4 rounded-full bg-white/90 dark:bg-slate-900/80 px-4 py-1.5 text-sm font-semibold uppercase text-slate-900 dark:text-white">
                     {event.category || 'Event'}
                 </span>
                 {isFull && (
@@ -111,10 +111,10 @@ export default function EventCard({ event, onRSVP, isRegistered }: EventCardProp
 
             <div className="p-5">
                 <Link href={`/events/${event.id}`}>
-                    <h3 className="mb-2 text-xl font-semibold text-gray-900 line-clamp-1 hover:text-[#AC1212] transition-colors">{event.title || 'Untitled Event'}</h3>
+                    <h3 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white line-clamp-1 hover:text-[#AC1212] transition-colors">{event.title || 'Untitled Event'}</h3>
                 </Link>
 
-                <div className="mb-4 flex flex-col gap-2 text-sm text-gray-500">
+                <div className="mb-4 flex flex-col gap-2 text-sm text-slate-500 dark:text-slate-400">
                     <div className="flex items-center gap-2">
                         <span className="text-[#AC1212]">📅</span>
                         <span>{formatDate(event.date)} • {formatTime(event.date)}</span>
@@ -125,11 +125,11 @@ export default function EventCard({ event, onRSVP, isRegistered }: EventCardProp
                     </div>
                 </div>
 
-                <p className="mb-4 line-clamp-2 text-sm text-gray-500">{event.description || 'No description available'}</p>
+                <p className="mb-4 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{event.description || 'No description available'}</p>
 
-                {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+                {error && <p className="mb-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-                <div className="flex items-center justify-between border-t pt-4">
+                <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-4">
                     <div>
                         <span className="text-lg font-bold text-[#AC1212]">Free</span>
                     </div>

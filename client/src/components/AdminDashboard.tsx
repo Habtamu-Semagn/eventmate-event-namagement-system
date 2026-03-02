@@ -68,7 +68,7 @@ export default function AdminDashboard() {
     };
 
     if (loading) {
-        return <div className="py-8 text-center text-gray-500">Loading pending events...</div>;
+        return <div className="py-8 text-center text-gray-500 dark:text-gray-400">Loading pending events...</div>;
     }
 
     return (
@@ -79,14 +79,14 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
                 {error && (
-                    <div className="mb-4 rounded-md bg-red-100 p-3 text-sm text-red-600">
+                    <div className="mb-4 rounded-md bg-red-100 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400">
                         {error}
                     </div>
                 )}
 
                 {pendingEvents.length === 0 ? (
-                    <div className="py-16 text-center text-gray-500">
-                        <h3 className="mb-2 text-lg font-semibold">No pending events</h3>
+                    <div className="py-16 text-center text-gray-500 dark:text-gray-400">
+                        <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">No pending events</h3>
                         <p>All events have been reviewed.</p>
                     </div>
                 ) : (
@@ -103,9 +103,9 @@ export default function AdminDashboard() {
                                 </div>
 
                                 <h3 className="mb-2 text-lg font-semibold">{event.title}</h3>
-                                <p className="mb-4 text-sm text-gray-500 line-clamp-2">{event.description}</p>
+                                <p className="mb-4 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{event.description}</p>
 
-                                <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
+                                <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-300">
                                     <div>
                                         <strong>Date:</strong> {formatDate(event.date)}
                                     </div>

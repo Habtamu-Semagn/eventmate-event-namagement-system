@@ -109,15 +109,78 @@
   --sidebar-ring: #AC1212;
 }
 
-/* Dark mode disabled - Light mode only */
-/* Remove .dark class entirely for light-only theme */
+/* Dark mode enabled with .dark class */
+.dark {
+  --radius: 0.625rem;
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
+  /* Background colors - dark theme with better contrast */
+  --background: #111827;
+  --foreground: #F9FAFB;
+  --card: #1F2937;
+  --card-foreground: #F9FAFB;
+  --popover: #1F2937;
+  --popover-foreground: #F9FAFB;
 
-  body {
-    @apply bg-background text-foreground;
+  /* Primary - adjusted for dark backgrounds */
+  --primary: #F87171;
+  --primary-foreground: #111827;
+
+  /* Secondary - neutral dark backgrounds */
+  --secondary: #374151;
+  --secondary-foreground: #F9FAFB;
+  --muted: #374151;
+  --muted-foreground: #D1D5DB;
+
+  /* Accent - adjusted for dark theme */
+  --accent: #FBBF24;
+  --accent-foreground: #111827;
+
+  /* Destructive */
+  --destructive: #DC2626;
+  --destructive-foreground: #FEF2F2;
+
+  /* Border and input - brighter for better visibility */
+  --border: #4B5563;
+  --input: #4B5563;
+  --ring: #F87171;
+
+  /* Chart colors */
+  --chart-1: #F87171;
+  --chart-2: #FBBF24;
+  --chart-3: #60A5FA;
+  --chart-4: #34D399;
+  --chart-5: #A78BFA;
+
+  /* Sidebar colors - dark theme with better contrast */
+  --sidebar: #111827;
+  --sidebar-foreground: #F9FAFB;
+  --sidebar-primary: #F87171;
+  --sidebar-primary-foreground: #111827;
+  --sidebar-accent: #374151;
+  --sidebar-accent-foreground: #F9FAFB;
+  --sidebar-border: #4B5563;
+  --sidebar-ring: #F87171;
+
+  /* Text colors for dark mode - white for contrast */
+  --text-primary: #F9FAFB;
+  --text-secondary: #E5E7EB;
+  --text-muted: #9CA3AF;
+  --text-muted-dark: #6B7280;
+  --text-accent: #FBBF24;
+  --text-success: #34D399;
+  --text-error: #F87171;
+
+  /* Background colors for cards/surfaces in dark mode */
+  --surface-hover: #374151;
+  --surface-border: #4B5563;
+
+  @layer base {
+    * {
+      @apply border-border outline-ring/50;
+    }
+
+    body {
+      @apply bg-background text-foreground;
+    }
   }
 }

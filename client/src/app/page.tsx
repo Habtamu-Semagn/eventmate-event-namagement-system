@@ -155,7 +155,7 @@ function MainApp() {
 
   if (loading) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-gradient-to-br from-[#180404] to-[#4A0202]">
+      <div className="flex h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-red-900 dark:from-[#180404] dark:via-[#4A0202] dark:to-red-950">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-[#EEB42C]"></div>
         <p className="mt-4 text-white">Loading Eventmate...</p>
       </div>
@@ -163,7 +163,7 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background dark:bg-background">
       <Navbar onNavigate={setCurrentView} />
 
       <main className="min-h-screen">
@@ -271,19 +271,19 @@ function MainApp() {
             </section>
 
             {/* Categories Section */}
-            <section className="bg-gray-50 py-16">
+            <section className="bg-slate-50 dark:bg-slate-900 py-16">
               <div className="mx-auto max-w-6xl px-4">
-                <h2 className="mb-12 text-center text-3xl font-bold text-gray-900">Browse by Category</h2>
+                <h2 className="mb-12 text-center text-3xl font-bold text-slate-900 dark:text-white">Browse by Category</h2>
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
                   {CATEGORIES.map(cat => (
                     <div
                       key={cat.id}
-                      className="group cursor-pointer rounded-2xl bg-white p-8 shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
+                      className="group cursor-pointer rounded-2xl bg-white dark:bg-slate-800 p-8 shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
                       onClick={() => handleCategoryClick(cat.id)}
                     >
                       <div className="mb-4 text-5xl">{cat.icon}</div>
-                      <h3 className="text-xl font-semibold text-gray-900">{cat.name}</h3>
-                      <p className="mt-2 text-gray-500">Discover amazing {cat.name.toLowerCase()} events near you</p>
+                      <h3 className="text-xl font-semibold text-slate-900 dark:text-white">{cat.name}</h3>
+                      <p className="mt-2 text-slate-500 dark:text-slate-400">Discover amazing {cat.name.toLowerCase()} events near you</p>
                     </div>
                   ))}
                 </div>
@@ -291,10 +291,10 @@ function MainApp() {
             </section>
 
             {/* Featured Events Section */}
-            <section className="bg-white py-16">
+            <section className="bg-background dark:bg-background py-16">
               <div className="mx-auto max-w-6xl px-4">
                 <div className="mb-12 flex items-center justify-between">
-                  <h2 className="text-3xl font-bold text-gray-900">Featured Events</h2>
+                  <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Featured Events</h2>
                   <Button
                     variant="outline"
                     className="border-[#AC1212] text-[#AC1212] hover:bg-[#AC1212] hover:text-white"
@@ -305,10 +305,10 @@ function MainApp() {
                 </div>
 
                 {loadingEvents ? (
-                  <div className="py-8 text-center text-gray-500">Loading events...</div>
+                  <div className="py-8 text-center text-slate-500 dark:text-slate-400">Loading events...</div>
                 ) : filteredEvents.length === 0 ? (
-                  <div className="py-16 text-center text-gray-500">
-                    <h3 className="mb-2 text-xl font-semibold text-gray-900">No events found</h3>
+                  <div className="py-16 text-center text-slate-500 dark:text-slate-400">
+                    <h3 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">No events found</h3>
                     <p>Be the first to create an event!</p>
                   </div>
                 ) : (
@@ -341,13 +341,13 @@ function MainApp() {
             </section>
 
             {/* Testimonials Section */}
-            <section className="bg-gray-50 py-16">
+            <section className="bg-slate-50 dark:bg-slate-900 py-16">
               <div className="mx-auto max-w-6xl px-4">
-                <h2 className="mb-12 text-center text-3xl font-bold text-gray-900">What Our Users Say</h2>
+                <h2 className="mb-12 text-center text-3xl font-bold text-slate-900 dark:text-white">What Our Users Say</h2>
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
                   {TESTIMONIALS.map((testimonial, index) => (
-                    <div key={index} className="rounded-2xl bg-white p-6 shadow-md">
-                      <p className="mb-6 text-gray-600">"{testimonial.text}"</p>
+                    <div key={index} className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-md">
+                      <p className="mb-6 text-slate-600 dark:text-slate-300">"{testimonial.text}"</p>
                       <div className="flex items-center gap-4">
                         <img
                           src={testimonial.image}
@@ -355,8 +355,8 @@ function MainApp() {
                           className="h-12 w-12 rounded-full object-cover"
                         />
                         <div>
-                          <div className="font-semibold text-gray-900">{testimonial.name}</div>
-                          <div className="text-sm text-gray-500">{testimonial.role}</div>
+                          <div className="font-semibold text-slate-900 dark:text-white">{testimonial.name}</div>
+                          <div className="text-sm text-slate-500 dark:text-slate-400">{testimonial.role}</div>
                         </div>
                       </div>
                     </div>
@@ -432,10 +432,10 @@ function MainApp() {
             <EventFilter onFilterChange={handleFilterChange} />
 
             {loadingEvents ? (
-              <div className="py-8 text-center text-gray-500">Loading events...</div>
+              <div className="py-8 text-center text-slate-500 dark:text-slate-400">Loading events...</div>
             ) : filteredEvents.length === 0 ? (
-              <div className="py-16 text-center text-gray-500">
-                <h3 className="mb-2 text-xl font-semibold text-gray-900">No events found</h3>
+              <div className="py-16 text-center text-slate-500 dark:text-slate-400">
+                <h3 className="mb-2 text-xl font-semibold text-slate-900 dark:text-white">No events found</h3>
                 <p>Try adjusting your filters.</p>
               </div>
             ) : (
@@ -454,14 +454,14 @@ function MainApp() {
         )}
 
         {currentView === 'organizer' && (
-          <div className="animate-fade-in bg-gray-50 py-12 px-8">
-            <h2 className="mb-8 text-center text-3xl font-bold text-gray-900">Organizer Dashboard</h2>
+          <div className="animate-fade-in bg-slate-50 dark:bg-slate-900 py-12 px-8">
+            <h2 className="mb-8 text-center text-3xl font-bold text-slate-900 dark:text-white">Organizer Dashboard</h2>
             <CreateEventForm onEventCreated={handleEventCreated} />
           </div>
         )}
 
         {currentView === 'admin' && (
-          <div className="animate-fade-in bg-gray-50 py-12 px-8">
+          <div className="animate-fade-in bg-slate-50 dark:bg-slate-900 py-12 px-8">
             <AdminDashboard />
           </div>
         )}

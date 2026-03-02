@@ -84,16 +84,16 @@ export default function OrganizerDashboard({ onEditEvent, onDeleteEvent, onViewA
 
     const getTicketingInfo = (event: Event) => {
         if (event.isFree) {
-            return <span className="text-green-600 font-medium">Free (RSVP)</span>;
+            return <span className="text-green-600 dark:text-green-400 font-medium">Free (RSVP)</span>;
         }
-        return <span className="text-[#AC1212] font-medium">${event.ticketPrice?.toFixed(2)}</span>;
+        return <span className="text-[#AC1212] dark:text-red-400 font-medium">${event.ticketPrice?.toFixed(2)}</span>;
     };
 
     if (loading) {
         return (
             <Card>
                 <CardContent className="py-10 text-center">
-                    <p className="text-gray-500">Loading your events...</p>
+                    <p className="text-gray-500 dark:text-gray-400">Loading your events...</p>
                 </CardContent>
             </Card>
         );
@@ -109,36 +109,36 @@ export default function OrganizerDashboard({ onEditEvent, onDeleteEvent, onViewA
             </CardHeader>
             <CardContent>
                 {error && (
-                    <div className="mb-4 rounded-md bg-red-100 p-3 text-sm text-red-600">
+                    <div className="mb-4 rounded-md bg-red-100 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400">
                         {error}
                     </div>
                 )}
 
                 {events.length === 0 ? (
                     <div className="text-center py-8">
-                        <p className="text-gray-500">You haven't created any events yet.</p>
-                        <p className="text-sm text-gray-400 mt-1">Create your first event to get started!</p>
+                        <p className="text-gray-500 dark:text-gray-400">You haven't created any events yet.</p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Create your first event to get started!</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
                         {events.map((event) => (
                             <div
                                 key={event.id}
-                                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="font-semibold truncate">{event.title}</h3>
                                         {getStatusBadge(event.status)}
                                     </div>
-                                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                                         <span>{new Date(event.date).toLocaleDateString()}</span>
                                         <span>•</span>
                                         <span>{event.registeredCount || 0} / {event.capacity} registered</span>
                                         <span>•</span>
                                         {getTicketingInfo(event)}
                                     </div>
-                                    <div className="text-sm text-gray-400 mt-1">
+                                    <div className="text-sm text-gray-400 dark:text-gray-500 mt-1">
                                         {event.location.city}, {event.location.country}
                                     </div>
                                 </div>

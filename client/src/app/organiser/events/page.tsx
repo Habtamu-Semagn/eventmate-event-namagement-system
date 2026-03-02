@@ -151,11 +151,11 @@ export default function DashboardEvents() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">My Events</h1>
-                    <p className="text-gray-500 mt-1">Manage and monitor your events</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">My Events</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and monitor your events</p>
                 </div>
                 <Link href="/dashboard/create">
-                    <Button className="bg-[#AC1212] hover:bg-[#8a0f0f] shadow-lg shadow-[#AC1212]/25 font-medium">
+                    <Button className="bg-[#AC1212] hover:bg-[#8a0f0f] shadow-lg shadow-[#AC1212]/25 font-medium text-white">
                         <Plus className="w-5 h-5 mr-2" />
                         Create Event
                     </Button>
@@ -167,7 +167,7 @@ export default function DashboardEvents() {
                 <CardContent className="pt-6">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                             <Input
                                 placeholder="Search events..."
                                 value={searchQuery}
@@ -209,11 +209,11 @@ export default function DashboardEvents() {
                 <CardContent className="p-0">
                     {filteredEvents.length === 0 ? (
                         <div className="text-center py-12">
-                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                                <Calendar className="w-8 h-8 text-gray-400" />
+                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                <Calendar className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                             </div>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No events found</h3>
-                            <p className="text-gray-500 mb-6">
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No events found</h3>
+                            <p className="text-gray-500 dark:text-gray-400 mb-6">
                                 {searchQuery || selectedCategory !== 'All' || statusFilter !== 'all'
                                     ? 'Try adjusting your filters'
                                     : 'Create your first event to get started'}
@@ -233,7 +233,7 @@ export default function DashboardEvents() {
                         </div>
                     ) : (
                         <Table>
-                            <TableHeader className="bg-gray-50">
+                            <TableHeader className="bg-gray-50 dark:bg-gray-800">
                                 <TableRow>
                                     <TableHead className="font-semibold">Event</TableHead>
                                     <TableHead className="font-semibold">Date</TableHead>
@@ -246,28 +246,28 @@ export default function DashboardEvents() {
                             </TableHeader>
                             <TableBody>
                                 {filteredEvents.map((event) => (
-                                    <TableRow key={event.id} className="hover:bg-gray-50/50">
+                                    <TableRow key={event.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
                                         <TableCell>
                                             <div className="flex flex-col">
-                                                <span className="font-semibold text-gray-900">{event.title}</span>
-                                                <span className="text-sm text-gray-500">{event.category}</span>
+                                                <span className="font-semibold text-gray-900 dark:text-white">{event.title}</span>
+                                                <span className="text-sm text-gray-500 dark:text-gray-400">{event.category}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-2 text-gray-600">
-                                                <Calendar className="w-4 h-4 text-gray-400" />
+                                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                                <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                                                 {formatDate(event.date)}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-2 text-gray-600">
-                                                <MapPin className="w-4 h-4 text-gray-400" />
+                                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                                <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                                                 {event.location?.city}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-2 text-gray-600">
-                                                <Users className="w-4 h-4 text-gray-400" />
+                                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                                <Users className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                                                 {event.registeredCount || 0} / {event.capacity}
                                             </div>
                                         </TableCell>
@@ -282,12 +282,12 @@ export default function DashboardEvents() {
                                         <TableCell>
                                             <div className="flex items-center justify-end gap-1">
                                                 <Link href={`/dashboard/attendees?event=${event.id}`}>
-                                                    <Button variant="ghost" size="icon" title="View Attendees" className="hover:bg-gray-100">
-                                                        <Eye className="w-4 h-4 text-gray-600" />
+                                                    <Button variant="ghost" size="icon" title="View Attendees" className="hover:bg-gray-100 dark:hover:bg-gray-800">
+                                                        <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                                                     </Button>
                                                 </Link>
-                                                <Button variant="ghost" size="icon" title="Edit" className="hover:bg-gray-100">
-                                                    <Edit className="w-4 h-4 text-gray-600" />
+                                                <Button variant="ghost" size="icon" title="Edit" className="hover:bg-gray-100 dark:hover:bg-gray-800">
+                                                    <Edit className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
@@ -295,9 +295,9 @@ export default function DashboardEvents() {
                                                     title="Delete"
                                                     onClick={() => handleDelete(event.id!)}
                                                     disabled={deleteId === event.id}
-                                                    className="hover:bg-red-50"
+                                                    className="hover:bg-red-50 dark:hover:bg-red-900/20"
                                                 >
-                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                    <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -311,37 +311,37 @@ export default function DashboardEvents() {
 
             {/* Stats Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-[#AC1212]/5 to-transparent">
+                <Card className="bg-gradient-to-br from-[#AC1212]/5 to-transparent dark:from-[#AC1212]/10">
                     <CardContent className="pt-6">
                         <div className="text-center">
-                            <p className="text-3xl font-bold text-[#AC1212]">{events.length}</p>
-                            <p className="text-sm text-gray-500">Total Events</p>
+                            <p className="text-3xl font-bold text-[#AC1212] dark:text-red-400">{events.length}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Total Events</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-green-50 to-transparent">
+                <Card className="bg-gradient-to-br from-green-50 to-transparent dark:from-green-900/20 dark:to-transparent">
                     <CardContent className="pt-6">
                         <div className="text-center">
-                            <p className="text-3xl font-bold text-green-600">{events.filter(e => e.status === 'approved').length}</p>
-                            <p className="text-sm text-gray-500">Approved</p>
+                            <p className="text-3xl font-bold text-green-600 dark:text-green-400">{events.filter(e => e.status === 'approved').length}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Approved</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-yellow-50 to-transparent">
+                <Card className="bg-gradient-to-br from-yellow-50 to-transparent dark:from-yellow-900/20 dark:to-transparent">
                     <CardContent className="pt-6">
                         <div className="text-center">
-                            <p className="text-3xl font-bold text-yellow-600">{events.filter(e => e.status === 'pending').length}</p>
-                            <p className="text-sm text-gray-500">Pending</p>
+                            <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{events.filter(e => e.status === 'pending').length}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Pending</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-[#EEB42C]/10 to-transparent">
+                <Card className="bg-gradient-to-br from-[#EEB42C]/10 to-transparent dark:from-yellow-600/20">
                     <CardContent className="pt-6">
                         <div className="text-center">
-                            <p className="text-3xl font-bold text-[#EEB42C]">
+                            <p className="text-3xl font-bold text-[#EEB42C] dark:text-yellow-400">
                                 ${events.reduce((sum, e) => sum + ((e.registeredCount || 0) * (e.ticketPrice || 0)), 0).toLocaleString()}
                             </p>
-                            <p className="text-sm text-gray-500">Total Revenue</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Total Revenue</p>
                         </div>
                     </CardContent>
                 </Card>

@@ -64,7 +64,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900 px-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1 text-center">
                     <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
@@ -74,7 +74,7 @@ export default function LoginPage() {
                 </CardHeader>
                 <CardContent>
                     {error && (
-                        <div className="mb-4 rounded-md bg-red-100 p-3 text-sm text-red-600">
+                        <div className="mb-4 rounded-md bg-red-100 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400">
                             {error}
                         </div>
                     )}
@@ -128,13 +128,13 @@ export default function LoginPage() {
                     </Form>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">
-                    <div className="text-center text-sm text-gray-600">
+                    <div className="text-center text-sm text-slate-600 dark:text-slate-400">
                         Don't have an account?{' '}
                         <Link href="/register" className="font-medium text-[#AC1212] hover:underline">
                             Sign up
                         </Link>
                     </div>
-                    <Link href="/" className="text-center text-sm text-gray-500 hover:text-gray-700">
+                    <Link href="/" className="text-center text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">
                         ← Back to Home
                     </Link>
                 </CardFooter>

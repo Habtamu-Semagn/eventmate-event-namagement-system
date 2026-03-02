@@ -140,8 +140,8 @@ export default function TicketsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Tickets</h1>
-                    <p className="text-gray-500 mt-1">Manage tickets and track sales</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Tickets</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">Manage tickets and track sales</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" className="border-gray-200 hover:bg-gray-50">
@@ -157,9 +157,9 @@ export default function TicketsPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">${totalRevenue.toLocaleString()}</p>
-                                <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">${totalRevenue.toLocaleString()}</p>
+                                <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-1">
                                     <ArrowUpRight className="w-3 h-3" />
                                     +12.5% from last month
                                 </p>
@@ -175,9 +175,9 @@ export default function TicketsPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Pending</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">${pendingAmount.toLocaleString()}</p>
-                                <p className="text-xs text-gray-400 mt-1">Awaiting payment</p>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">${pendingAmount.toLocaleString()}</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Awaiting payment</p>
                             </div>
                             <div className="w-14 h-14 rounded-xl bg-yellow-50 flex items-center justify-center">
                                 <Clock className="w-7 h-7 text-yellow-600" />
@@ -190,9 +190,9 @@ export default function TicketsPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Tickets Sold</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{totalTicketsSold}</p>
-                                <p className="text-xs text-gray-400 mt-1">This period</p>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tickets Sold</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{totalTicketsSold}</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">This period</p>
                             </div>
                             <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center">
                                 <Ticket className="w-7 h-7 text-blue-600" />
@@ -206,7 +206,7 @@ export default function TicketsPage() {
 
             {/* Tabs */}
             <Tabs defaultValue="sales" className="space-y-4">
-                <TabsList className="bg-gray-100">
+                <TabsList className="dark:bg-slate-700">
                     <TabsTrigger value="sales" className="data-[state=active]:bg-[#AC1212] data-[state=active]:text-white">
                         <TrendingUp className="w-4 h-4 mr-2" />
                         Sales
@@ -227,7 +227,7 @@ export default function TicketsPage() {
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-2">
                                     <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                                         <Input
                                             placeholder="Search..."
                                             value={searchQuery}
@@ -264,15 +264,15 @@ export default function TicketsPage() {
                         <CardContent className="p-0">
                             {filteredSales.length === 0 ? (
                                 <div className="text-center py-12">
-                                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                                        <Ticket className="w-8 h-8 text-gray-400" />
+                                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        <Ticket className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                                     </div>
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No sales found</h3>
-                                    <p className="text-gray-500">Try adjusting your filters</p>
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No sales found</h3>
+                                    <p className="text-gray-500 dark:text-gray-400">Try adjusting your filters</p>
                                 </div>
                             ) : (
                                 <Table>
-                                    <TableHeader className="bg-gray-50">
+                                    <TableHeader className="bg-gray-50 dark:bg-gray-800">
                                         <TableRow>
                                             <TableHead className="font-semibold">Event</TableHead>
                                             <TableHead className="font-semibold">Buyer</TableHead>
@@ -285,29 +285,29 @@ export default function TicketsPage() {
                                     </TableHeader>
                                     <TableBody>
                                         {filteredSales.map((sale) => (
-                                            <TableRow key={sale.id} className="hover:bg-gray-50/50">
+                                            <TableRow key={sale.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
                                                 <TableCell>
-                                                    <span className="font-medium text-gray-900">{sale.eventTitle}</span>
+                                                    <span className="font-medium text-gray-900 dark:text-white">{sale.eventTitle}</span>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div>
-                                                        <p className="font-medium text-gray-900">{sale.buyerName}</p>
-                                                        <p className="text-sm text-gray-500">{sale.buyerEmail}</p>
+                                                        <p className="font-medium text-gray-900 dark:text-white">{sale.buyerName}</p>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400">{sale.buyerEmail}</p>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className="border-gray-200">
+                                                    <Badge variant="outline" className="border-gray-200 dark:border-gray-700">
                                                         {sale.ticketType}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <span className="text-gray-900">{sale.quantity}</span>
+                                                    <span className="text-gray-900 dark:text-white">{sale.quantity}</span>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <span className="font-semibold text-gray-900">${sale.amount.toFixed(2)}</span>
+                                                    <span className="font-semibold text-gray-900 dark:text-white">${sale.amount.toFixed(2)}</span>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <span className="text-gray-600">{sale.purchaseDate}</span>
+                                                    <span className="text-gray-600 dark:text-gray-300">{sale.purchaseDate}</span>
                                                 </TableCell>
                                                 <TableCell>
                                                     {getStatusBadge(sale.status)}
@@ -322,34 +322,34 @@ export default function TicketsPage() {
                 </TabsContent>
 
                 <TabsContent value="events" className="space-y-4">
-                    <Card className="border-gray-200 shadow-sm">
-                        <CardHeader className="border-b">
+                    <Card className="border-gray-200 dark:border-gray-700 shadow-sm">
+                        <CardHeader className="border-b dark:border-gray-700">
                             <CardTitle className="text-xl">Event Tickets</CardTitle>
                             <CardDescription>Manage ticket types for your events</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
                                 {mockEvents.filter(e => !e.isFree).map((event) => (
-                                    <div key={event.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50 transition-colors">
+                                    <div key={event.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-xl bg-[#AC1212]/10 flex items-center justify-center">
                                                 <Ticket className="w-6 h-6 text-[#AC1212]" />
                                             </div>
                                             <div>
-                                                <h3 className="font-semibold text-gray-900">{event.title}</h3>
-                                                <p className="text-sm text-gray-500">${event.ticketPrice} per ticket</p>
+                                                <h3 className="font-semibold text-gray-900 dark:text-white">{event.title}</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">${event.ticketPrice} per ticket</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="text-right">
-                                                <p className="font-semibold text-gray-900">{event.registeredCount}</p>
-                                                <p className="text-xs text-gray-500">sold</p>
+                                                <p className="font-semibold text-gray-900 dark:text-white">{event.registeredCount}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">sold</p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="font-semibold text-green-600">${((event.registeredCount || 0) * (event.ticketPrice || 0)).toLocaleString()}</p>
-                                                <p className="text-xs text-gray-500">revenue</p>
+                                                <p className="font-semibold text-green-600 dark:text-green-400">${((event.registeredCount || 0) * (event.ticketPrice || 0)).toLocaleString()}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">revenue</p>
                                             </div>
-                                            <Button variant="outline" size="sm" className="border-gray-200">
+                                            <Button variant="outline" size="sm" className="border-gray-200 dark:border-gray-700">
                                                 Edit
                                             </Button>
                                         </div>

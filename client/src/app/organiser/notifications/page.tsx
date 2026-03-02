@@ -212,8 +212,8 @@ export default function NotificationsPage() {
                     </Button>
                 </Link>
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Notifications</h1>
-                    <p className="text-gray-500 mt-1">Send updates and announcements to your attendees</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Notifications</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">Send updates and announcements to your attendees</p>
                 </div>
             </div>
 
@@ -256,8 +256,8 @@ export default function NotificationsPage() {
                                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="font-medium text-gray-900">{selectedEvent.title}</p>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <p className="font-medium text-gray-900 dark:text-white">{selectedEvent.title}</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                                 {new Date(selectedEvent.date!).toLocaleDateString('en-US', {
                                                     month: 'long',
                                                     day: 'numeric',
@@ -265,7 +265,7 @@ export default function NotificationsPage() {
                                                 })} • {selectedEvent.location?.city}, {selectedEvent.location?.country}
                                             </p>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                                             <Users className="w-4 h-4" />
                                             {selectedEvent.registeredCount} / {selectedEvent.capacity}
                                         </div>
@@ -323,7 +323,7 @@ export default function NotificationsPage() {
                                     rows={8}
                                     className="border-gray-200 focus:border-[#AC1212] focus:ring-[#AC1212] resize-none"
                                 />
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-gray-400 dark:text-gray-500">
                                     Use {'{{name}}'} for attendee name, {'{{event_name}}'} for event name, etc.
                                 </p>
                             </div>
@@ -332,7 +332,7 @@ export default function NotificationsPage() {
 
                     {/* Error & Success Messages */}
                     {error && (
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-600">
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3 text-red-600 dark:text-red-400">
                             <AlertCircle className="w-5 h-5 flex-shrink-0" />
                             {error}
                         </div>
@@ -355,7 +355,7 @@ export default function NotificationsPage() {
                         <Button
                             onClick={handleSend}
                             disabled={isSending || !selectedEventId}
-                            className="flex-1 bg-[#AC1212] hover:bg-[#8a0f0f] shadow-lg shadow-[#AC1212]/25 font-medium"
+                            className="flex-1 bg-[#AC1212] hover:bg-[#8a0f0f] shadow-lg shadow-[#AC1212]/25 font-medium text-white"
                         >
                             {isSending ? (
                                 <>
@@ -380,30 +380,30 @@ export default function NotificationsPage() {
                             <CardTitle className="text-lg">Recipients Summary</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                                 <div className="flex items-center gap-3">
-                                    <CheckCircle className="w-5 h-5 text-green-600" />
-                                    <span className="text-gray-700">Confirmed</span>
+                                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                    <span className="text-gray-700 dark:text-gray-300">Confirmed</span>
                                 </div>
-                                <span className="font-semibold text-gray-900">
+                                <span className="font-semibold text-gray-900 dark:text-white">
                                     {selectedEvent ? Math.floor((selectedEvent.registeredCount || 0) * 0.8) : 0}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                                 <div className="flex items-center gap-3">
-                                    <Clock className="w-5 h-5 text-yellow-600" />
-                                    <span className="text-gray-700">Waitlisted</span>
+                                    <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                                    <span className="text-gray-700 dark:text-gray-300">Waitlisted</span>
                                 </div>
-                                <span className="font-semibold text-gray-900">
+                                <span className="font-semibold text-gray-900 dark:text-white">
                                     {selectedEvent ? Math.floor((selectedEvent.registeredCount || 0) * 0.1) : 0}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <div className="flex items-center gap-3">
-                                    <Users className="w-5 h-5 text-gray-600" />
-                                    <span className="text-gray-700">Total</span>
+                                    <Users className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                                    <span className="text-gray-700 dark:text-gray-300">Total</span>
                                 </div>
-                                <span className="font-semibold text-gray-900">
+                                <span className="font-semibold text-gray-900 dark:text-white">
                                     {selectedEvent?.registeredCount || 0}
                                 </span>
                             </div>

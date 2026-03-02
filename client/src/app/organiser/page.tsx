@@ -91,11 +91,11 @@ export default function DashboardOverview() {
             {/* Header Section - Visual Hierarchy */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
-                    <p className="text-gray-500 mt-1">Welcome back, {user?.displayName || 'Organizer'}! Here's your event overview.</p>
+                    <h1 className="text-3xl font-bold text-black dark:text-white tracking-tight">Dashboard</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">Welcome back, {user?.displayName || 'Organizer'}! Here's your event overview.</p>
                 </div>
                 <Link href="/organiser/create">
-                    <Button className="bg-[#AC1212] hover:bg-[#8a0f0f] shadow-lg shadow-[#AC1212]/25 font-medium">
+                    <Button className="bg-[#AC1212] hover:bg-[#8a0f0f] shadow-lg shadow-[#AC1212]/25 font-medium text-white hover:cursor-pointer">
                         <Plus className="w-5 h-5 mr-2" />
                         Create Event
                     </Button>
@@ -109,11 +109,11 @@ export default function DashboardOverview() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total Events</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalEvents}</p>
-                                <p className="text-xs text-gray-400 mt-1">Active: {stats.approvedEvents}</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Events</p>
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{stats.totalEvents}</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Active: {stats.approvedEvents}</p>
                             </div>
-                            <div className="w-14 h-14 rounded-xl bg-[#AC1212]/10 flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-xl  flex items-center justify-center">
                                 <Calendar className="w-7 h-7 text-[#AC1212]" />
                             </div>
                         </div>
@@ -125,12 +125,12 @@ export default function DashboardOverview() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Pending Approval</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.pendingEvents}</p>
-                                <p className="text-xs text-gray-400 mt-1">Awaiting review</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Pending Approval</p>
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{stats.pendingEvents}</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Awaiting review</p>
                             </div>
-                            <div className="w-14 h-14 rounded-xl bg-yellow-50 flex items-center justify-center">
-                                <Clock className="w-7 h-7 text-yellow-600" />
+                            <div className="w-14 h-14 rounded-xl  flex items-center justify-center">
+                                <Clock className="w-7 h-7 text-yellow-600 dark:text-yellow-400" />
                             </div>
                         </div>
                     </CardContent>
@@ -141,12 +141,12 @@ export default function DashboardOverview() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total Attendees</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalAttendees.toLocaleString()}</p>
-                                <p className="text-xs text-gray-400 mt-1">Across all events</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Attendees</p>
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{stats.totalAttendees.toLocaleString()}</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Across all events</p>
                             </div>
-                            <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center">
-                                <Users className="w-7 h-7 text-blue-600" />
+                            <div className="w-14 h-14 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                                <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
                             </div>
                         </div>
                     </CardContent>
@@ -157,9 +157,9 @@ export default function DashboardOverview() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{formatCurrency(stats.revenue)}</p>
-                                <p className="text-xs text-gray-400 mt-1">Ticket sales</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Revenue</p>
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{formatCurrency(stats.revenue)}</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Ticket sales</p>
                             </div>
                             <div className="w-14 h-14 rounded-xl bg-[#EEB42C]/10 flex items-center justify-center">
                                 <TrendingUp className="w-7 h-7 text-[#EEB42C]" />
@@ -172,7 +172,7 @@ export default function DashboardOverview() {
             {/* Tabs for different sections */}
             <Tabs defaultValue="recent" className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <TabsList className="bg-gray-100">
+                    <TabsList className="bg-gray-100 dark:bg-gray-800">
                         <TabsTrigger value="recent" className="data-[state=active]:bg-[#AC1212] data-[state=active]:text-white">
                             <Activity className="w-4 h-4 mr-2" />
                             Recent Events
@@ -182,7 +182,7 @@ export default function DashboardOverview() {
                             Upcoming
                         </TabsTrigger>
                     </TabsList>
-                    <Link href="/organiser/events" className="text-sm text-[#AC1212] hover:underline flex items-center gap-1 font-medium">
+                    <Link href="/organiser/events" className="text-md font-medium text-[#AC1212] hover:underline dark:text-white flex items-center gap-1">
                         View all events <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
@@ -200,11 +200,11 @@ export default function DashboardOverview() {
                         <CardContent className="pt-4">
                             {recentEvents.length === 0 ? (
                                 <div className="text-center py-12">
-                                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                                        <Calendar className="w-8 h-8 text-gray-400" />
+                                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        <Calendar className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                                     </div>
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No events yet</h3>
-                                    <p className="text-gray-500 mb-6">Create your first event to get started</p>
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No events yet</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mb-6">Create your first event to get started</p>
                                     <Link href="/organiser/create">
                                         <Button className="bg-[#AC1212] hover:bg-[#8a0f0f]">
                                             <Plus className="w-5 h-5 mr-2" />
@@ -217,21 +217,21 @@ export default function DashboardOverview() {
                                     {recentEvents.map((event) => (
                                         <div
                                             key={event.id}
-                                            className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50 hover:border-gray-200 transition-all group"
+                                            className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-600 transition-all group"
                                         >
                                             <div className="flex items-center gap-4">
                                                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#AC1212]/10 to-[#AC1212]/5 flex items-center justify-center group-hover:scale-105 transition-transform">
                                                     <Calendar className="w-6 h-6 text-[#AC1212]" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900 text-lg">{event.title}</h3>
+                                                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg">{event.title}</h3>
                                                     <div className="flex items-center gap-3 mt-1">
-                                                        <span className="text-sm text-gray-500 flex items-center gap-1">
+                                                        <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                                             <Clock className="w-3.5 h-3.5" />
                                                             {new Date(event.date!).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                                         </span>
-                                                        <span className="text-sm text-gray-400">•</span>
-                                                        <span className="text-sm text-gray-500 flex items-center gap-1">
+                                                        <span className="text-sm text-gray-400 dark:text-gray-500">•</span>
+                                                        <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                                             <MapPin className="w-3.5 h-3.5" />
                                                             {event.location?.city}
                                                         </span>
@@ -240,16 +240,16 @@ export default function DashboardOverview() {
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <div className="text-right">
-                                                    <p className="text-sm font-medium text-gray-900">
+                                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                         {event.registeredCount}/{event.capacity}
                                                     </p>
-                                                    <p className="text-xs text-gray-500">attendees</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">attendees</p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {event.isFree ? (
                                                         <Badge variant="secondary" className="bg-green-100 text-green-700">Free</Badge>
                                                     ) : (
-                                                        <Badge className="bg-[#EEB42C] text-gray-900">{formatCurrency(event.ticketPrice!)}</Badge>
+                                                        <Badge className="bg-[#EEB42C] text-slate-900 font-medium">{formatCurrency(event.ticketPrice!)}</Badge>
                                                     )}
                                                     <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusBadge(event.status!)}`}>
                                                         {event.status}
@@ -272,7 +272,7 @@ export default function DashboardOverview() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-center py-8">
-                                <p className="text-gray-500">No upcoming events scheduled</p>
+                                <p className="text-gray-500 dark:text-gray-400">No upcoming events scheduled</p>
                             </div>
                         </CardContent>
                     </Card>

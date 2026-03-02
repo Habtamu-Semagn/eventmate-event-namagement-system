@@ -80,8 +80,8 @@ export default function AdminDashboard() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Admin Dashboard</h1>
-                    <p className="text-gray-500 mt-1">Monitor and manage your platform</p>
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Admin Dashboard</h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Monitor and manage your platform</p>
                 </div>
             </div>
 
@@ -91,15 +91,15 @@ export default function AdminDashboard() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total Users</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalUsers.toLocaleString()}</p>
-                                <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Users</p>
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{stats.totalUsers.toLocaleString()}</p>
+                                <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-1">
                                     <ArrowUpRight className="w-3 h-3" />
                                     +12.5% this month
                                 </p>
                             </div>
-                            <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center">
-                                <Users className="w-7 h-7 text-gray-700" />
+                            <div className="w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                <Users className="w-7 h-7 text-slate-700 dark:text-slate-300" />
                             </div>
                         </div>
                     </CardContent>
@@ -109,15 +109,15 @@ export default function AdminDashboard() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Active Users</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.activeUsers.toLocaleString()}</p>
-                                <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Users</p>
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{stats.activeUsers.toLocaleString()}</p>
+                                <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-1">
                                     <ArrowUpRight className="w-3 h-3" />
                                     +8.2% this week
                                 </p>
                             </div>
-                            <div className="w-14 h-14 rounded-xl bg-green-50 flex items-center justify-center">
-                                <Activity className="w-7 h-7 text-green-600" />
+                            <div className="w-14 h-14 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
+                                <Activity className="w-7 h-7 text-green-600 dark:text-green-400" />
                             </div>
                         </div>
                     </CardContent>
@@ -127,12 +127,12 @@ export default function AdminDashboard() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total Events</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalEvents}</p>
-                                <p className="text-xs text-gray-400 mt-1">{stats.pendingEvents} pending approval</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Events</p>
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{stats.totalEvents}</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{stats.pendingEvents} pending approval</p>
                             </div>
-                            <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center">
-                                <Calendar className="w-7 h-7 text-blue-600" />
+                            <div className="w-14 h-14 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                                <Calendar className="w-7 h-7 text-blue-600 dark:text-blue-400" />
                             </div>
                         </div>
                     </CardContent>
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
 
             {/* Tabs Section */}
             <Tabs defaultValue="activity" className="space-y-4">
-                <TabsList className="bg-gray-100">
+                <TabsList className="bg-slate-100 dark:bg-slate-800">
                     <TabsTrigger value="activity" className="data-[state=active]:bg-[#AC1212] data-[state=active]:text-white">
                         <Activity className="w-4 h-4 mr-2" />
                         Recent Activity
@@ -155,14 +155,14 @@ export default function AdminDashboard() {
                 </TabsList>
 
                 <TabsContent value="activity" className="space-y-4">
-                    <Card className="border-gray-200 shadow-sm">
-                        <CardHeader className="border-b">
+                    <Card className="border-gray-200 dark:border-gray-700 shadow-sm">
+                        <CardHeader className="border-b dark:border-gray-700">
                             <CardTitle className="text-xl">Recent Activity</CardTitle>
                             <CardDescription>Latest platform activities</CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
                             <Table>
-                                <TableHeader className="bg-gray-50">
+                                <TableHeader className="bg-gray-50 dark:bg-gray-800">
                                     <TableRow>
                                         <TableHead className="font-semibold">Action</TableHead>
                                         <TableHead className="font-semibold">User/Item</TableHead>
@@ -172,17 +172,17 @@ export default function AdminDashboard() {
                                 </TableHeader>
                                 <TableBody>
                                     {recentActivity.map((item) => (
-                                        <TableRow key={item.id} className="hover:bg-gray-50/50">
+                                        <TableRow key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
                                                     {item.type === 'user' && <Users className="w-4 h-4 text-blue-500" />}
                                                     {item.type === 'event' && <Calendar className="w-4 h-4 text-green-500" />}
                                                     {item.type === 'content' && <FileText className="w-4 h-4 text-red-500" />}
-                                                    <span className="font-medium text-gray-900">{item.action}</span>
+                                                    <span className="font-medium text-slate-900 dark:text-white">{item.action}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-gray-600">{item.user}</TableCell>
-                                            <TableCell className="text-gray-500">{item.time}</TableCell>
+                                            <TableCell className="text-slate-600 dark:text-slate-300">{item.user}</TableCell>
+                                            <TableCell className="text-slate-500 dark:text-slate-400">{item.time}</TableCell>
                                             <TableCell>
                                                 <Badge variant="outline" className="capitalize">
                                                     {item.type}
@@ -197,14 +197,14 @@ export default function AdminDashboard() {
                 </TabsContent>
 
                 <TabsContent value="pending" className="space-y-4">
-                    <Card className="border-gray-200 shadow-sm">
-                        <CardHeader className="border-b">
+                    <Card className="border-gray-200 dark:border-gray-700 shadow-sm">
+                        <CardHeader className="border-b dark:border-gray-700">
                             <CardTitle className="text-xl">Pending Event Approvals</CardTitle>
                             <CardDescription>Events waiting for admin review</CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
                             <Table>
-                                <TableHeader className="bg-gray-50">
+                                <TableHeader className="bg-gray-50 dark:bg-gray-800">
                                     <TableRow>
                                         <TableHead className="font-semibold">Event</TableHead>
                                         <TableHead className="font-semibold">Organizer</TableHead>
@@ -214,19 +214,19 @@ export default function AdminDashboard() {
                                 </TableHeader>
                                 <TableBody>
                                     {pendingApprovals.map((event) => (
-                                        <TableRow key={event.id} className="hover:bg-gray-50/50">
+                                        <TableRow key={event.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                                             <TableCell>
-                                                <span className="font-medium text-gray-900">{event.title}</span>
+                                                <span className="font-medium text-slate-900 dark:text-white">{event.title}</span>
                                             </TableCell>
-                                            <TableCell className="text-gray-600">{event.organizer}</TableCell>
-                                            <TableCell className="text-gray-500">{event.date}</TableCell>
+                                            <TableCell className="text-slate-600 dark:text-slate-300">{event.organizer}</TableCell>
+                                            <TableCell className="text-slate-500 dark:text-slate-400">{event.date}</TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
                                                     <Button size="sm" className="bg-green-600 hover:bg-green-700">
                                                         <CheckCircle className="w-4 h-4 mr-1" />
                                                         Approve
                                                     </Button>
-                                                    <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
+                                                    <Button size="sm" variant="outline" className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20">
                                                         <Ban className="w-4 h-4 mr-1" />
                                                         Reject
                                                     </Button>

@@ -26,11 +26,10 @@ import {
     Download,
     Calendar,
     User,
-    Event,
+    FileText,
     CheckCircle,
     XCircle,
     AlertCircle,
-    FileText,
     Clock,
     History
 } from 'lucide-react';
@@ -77,27 +76,27 @@ export default function AuditTrailPage() {
     });
 
     const getStatusBadge = (status: string) => {
-        const styles: Record<string, { bg: string; text: string; icon: any }> = {
-            success: { bg: 'bg-green-100 text-green-700 border-green-200', text: 'Success', icon: CheckCircle },
-            failed: { bg: 'bg-red-100 text-red-700 border-red-200', text: 'Failed', icon: XCircle },
-            warning: { bg: 'bg-yellow-100 text-yellow-700 border-yellow-200', text: 'Warning', icon: AlertCircle },
+        const styles: Record<string, { bg: string; text: string; border: string; icon: any; label: string }> = {
+            success: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', border: 'border-green-200 dark:border-green-800', icon: CheckCircle, label: 'Success' },
+            failed: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', border: 'border-red-200 dark:border-red-800', icon: XCircle, label: 'Failed' },
+            warning: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-400', border: 'border-yellow-200 dark:border-yellow-800', icon: AlertCircle, label: 'Warning' },
         };
         const style = styles[status] || styles.success;
         const Icon = style.icon;
         return (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg}`}>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
                 <Icon className="w-3.5 h-3.5" />
-                {style.text}
+                {style.label}
             </span>
         );
     };
 
     const getTargetTypeIcon = (type: string) => {
         switch (type) {
-            case 'event': return <Calendar className="w-4 h-4 text-blue-500" />;
-            case 'user': return <User className="w-4 h-4 text-green-500" />;
-            case 'content': return <FileText className="w-4 h-4 text-orange-500" />;
-            default: return <History className="w-4 h-4 text-gray-500" />;
+            case 'event': return <Calendar className="w-4 h-4 text-blue-500 dark:text-blue-400" />;
+            case 'user': return <User className="w-4 h-4 text-green-500 dark:text-green-400" />;
+            case 'content': return <FileText className="w-4 h-4 text-orange-500 dark:text-orange-400" />;
+            default: return <History className="w-4 h-4 text-gray-500 dark:text-gray-400" />;
         }
     };
 
@@ -106,8 +105,8 @@ export default function AuditTrailPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Audit Trail</h1>
-                    <p className="text-gray-500 mt-1">Track all system activities and changes</p>
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Audit Trail</h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Track all system activities and changes</p>
                 </div>
                 <Button className="bg-[#AC1212] hover:bg-[#8a0f0f]">
                     <Download className="w-4 h-4 mr-2" />
@@ -116,11 +115,11 @@ export default function AuditTrailPage() {
             </div>
 
             {/* Filters */}
-            <Card className="border-gray-200 shadow-sm">
+            <Card className="border-gray-200 dark:border-gray-700 shadow-sm">
                 <CardContent className="pt-6">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                             <Input
                                 placeholder="Search by user, action, or target..."
                                 value={searchQuery}
@@ -160,24 +159,11 @@ export default function AuditTrailPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total Events</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{mockAuditTrail.filter(e => e.targetType === 'event').length}</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Events</p>
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{mockAuditTrail.filter(e => e.targetType === 'event').length}</p>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                                <Calendar className="w-6 h-6 text-blue-600" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="hover:shadow-md transition-shadow">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-500">User Actions</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">{mockAuditTrail.filter(e => e.targetType === 'user').length}</p>
-                            </div>
-                            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-                                <User className="w-6 h-6 text-green-600" />
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                                <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                             </div>
                         </div>
                     </CardContent>
@@ -186,11 +172,11 @@ export default function AuditTrailPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Failed Attempts</p>
-                                <p className="text-3xl font-bold text-red-600 mt-1">{mockAuditTrail.filter(e => e.status === 'failed').length}</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">User Actions</p>
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{mockAuditTrail.filter(e => e.targetType === 'user').length}</p>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
-                                <XCircle className="w-6 h-6 text-red-600" />
+                            <div className="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
+                                <User className="w-6 h-6 text-green-600 dark:text-green-400" />
                             </div>
                         </div>
                     </CardContent>
@@ -199,11 +185,24 @@ export default function AuditTrailPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Warnings</p>
-                                <p className="text-3xl font-bold text-yellow-600 mt-1">{mockAuditTrail.filter(e => e.status === 'warning').length}</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Failed Attempts</p>
+                                <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{mockAuditTrail.filter(e => e.status === 'failed').length}</p>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
-                                <AlertCircle className="w-6 h-6 text-yellow-600" />
+                            <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
+                                <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="hover:shadow-md transition-shadow">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Warnings</p>
+                                <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{mockAuditTrail.filter(e => e.status === 'warning').length}</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-yellow-50 dark:bg-yellow-900/30 flex items-center justify-center">
+                                <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                             </div>
                         </div>
                     </CardContent>
@@ -211,14 +210,14 @@ export default function AuditTrailPage() {
             </div>
 
             {/* Audit Trail Table */}
-            <Card className="border-gray-200 shadow-sm">
-                <CardHeader className="border-b pb-4">
+            <Card className="border-slate-200 dark:border-slate-700 shadow-sm">
+                <CardHeader className="border-b dark:border-slate-700 pb-4">
                     <CardTitle className="text-xl">Activity Log</CardTitle>
                     <CardDescription>{filteredAudit.length} entries found</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
-                        <TableHeader className="bg-gray-50">
+                        <TableHeader className="bg-slate-50 dark:bg-slate-800">
                             <TableRow>
                                 <TableHead className="font-semibold">Timestamp</TableHead>
                                 <TableHead className="font-semibold">Action</TableHead>
@@ -230,27 +229,27 @@ export default function AuditTrailPage() {
                         </TableHeader>
                         <TableBody>
                             {filteredAudit.map((entry) => (
-                                <TableRow key={entry.id} className="hover:bg-gray-50/50">
+                                <TableRow key={entry.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                                     <TableCell>
-                                        <div className="flex items-center gap-2 text-gray-600">
-                                            <Clock className="w-4 h-4 text-gray-400" />
+                                        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                            <Clock className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                                             {entry.timestamp}
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             {getTargetTypeIcon(entry.targetType)}
-                                            <span className="font-medium text-gray-900">{entry.action}</span>
+                                            <span className="font-medium text-slate-900 dark:text-white">{entry.action}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <div>
-                                            <p className="font-medium text-gray-900">{entry.user}</p>
-                                            <p className="text-sm text-gray-500">{entry.userEmail}</p>
+                                            <p className="font-medium text-slate-900 dark:text-white">{entry.user}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">{entry.userEmail}</p>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-gray-600">{entry.target}</TableCell>
-                                    <TableCell className="text-gray-500 text-sm max-w-xs truncate">
+                                    <TableCell className="text-slate-600 dark:text-slate-300">{entry.target}</TableCell>
+                                    <TableCell className="text-slate-500 dark:text-slate-400 text-sm max-w-xs truncate">
                                         {entry.details}
                                     </TableCell>
                                     <TableCell>

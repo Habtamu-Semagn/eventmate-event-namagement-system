@@ -121,8 +121,8 @@ export default function AttendeesPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Attendees</h1>
-                    <p className="text-gray-500 mt-1">View and manage attendees for your events</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Attendees</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">View and manage attendees for your events</p>
                 </div>
 
                 {/* Event Selector and Export Button */}
@@ -139,7 +139,7 @@ export default function AttendeesPage() {
                             ))}
                         </SelectContent>
                     </Select>
-                    <Button className="bg-[#AC1212] hover:bg-[#8a0f0f]">
+                    <Button className="bg-[#AC1212] hover:bg-[#8a0f0f] text-white">
                         <Download className="w-4 h-4 mr-2" />
                         Export
                     </Button>
@@ -148,7 +148,7 @@ export default function AttendeesPage() {
 
             {/* Registered Attendees Heading */}
             <div className="mt-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Registered Attendees</h2>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Registered Attendees</h2>
 
                 {/* Search */}
                 <div className="mb-4">
@@ -159,14 +159,14 @@ export default function AttendeesPage() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-10 border-gray-200"
                         />
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">🔍</span>
                     </div>
                 </div>
 
                 {/* Table */}
-                <Card className="border-gray-200 shadow-sm">
+                <Card className="border-gray-200 dark:border-gray-700 shadow-sm">
                     <Table>
-                        <TableHeader className="bg-gray-50">
+                        <TableHeader className="bg-gray-50 dark:bg-gray-800">
                             <TableRow>
                                 <TableHead className="font-semibold">Attendee</TableHead>
                                 <TableHead className="font-semibold">Email</TableHead>
@@ -180,8 +180,8 @@ export default function AttendeesPage() {
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center py-12">
                                         <div className="flex flex-col items-center">
-                                            <Users className="w-12 h-12 text-gray-300 mb-3" />
-                                            <p className="text-gray-500">
+                                            <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
+                                            <p className="text-gray-500 dark:text-gray-400">
                                                 {searchQuery ? 'No attendees match your search' : 'No attendees found'}
                                             </p>
                                         </div>
@@ -189,33 +189,33 @@ export default function AttendeesPage() {
                                 </TableRow>
                             ) : (
                                 filteredAttendees.map((attendee) => (
-                                    <TableRow key={attendee.id} className="hover:bg-gray-50/50">
+                                    <TableRow key={attendee.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-[#AC1212]/10 flex items-center justify-center">
                                                     <User className="w-5 h-5 text-[#AC1212]" />
                                                 </div>
-                                                <span className="font-medium text-gray-900">{attendee.name}</span>
+                                                <span className="font-medium text-gray-900 dark:text-white">{attendee.name}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-2 text-gray-600">
-                                                <Mail className="w-4 h-4 text-gray-400" />
+                                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                                <Mail className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                                                 {attendee.email}
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             {attendee.ticketType ? (
-                                                <Badge variant="outline" className="border-gray-200">
+                                                <Badge variant="outline" className="border-gray-200 dark:border-gray-700">
                                                     {attendee.ticketType}
                                                 </Badge>
                                             ) : (
-                                                <span className="text-gray-400">-</span>
+                                                <span className="text-gray-400 dark:text-gray-500">-</span>
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-2 text-gray-600">
-                                                <Clock className="w-4 h-4 text-gray-400" />
+                                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                                <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                                                 {new Date(attendee.registrationDate).toLocaleDateString()}
                                             </div>
                                         </TableCell>

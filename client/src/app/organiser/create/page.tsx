@@ -128,8 +128,8 @@ export default function CreateEventPage() {
             <div className="flex items-center gap-4">
 
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Create Event</h1>
-                    <p className="text-gray-500 mt-1">Fill in the details to create a new event</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Create Event</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">Fill in the details to create a new event</p>
                 </div>
             </div>
 
@@ -197,10 +197,10 @@ export default function CreateEventPage() {
                             {/* Image Upload Placeholder */}
                             <div className="grid gap-3">
                                 <Label>Event Image</Label>
-                                <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center hover:border-[#AC1212] transition-colors cursor-pointer">
-                                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                    <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
-                                    <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
+                                <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-8 text-center hover:border-[#AC1212] transition-colors cursor-pointer">
+                                    <Upload className="w-8 h-8 text-slate-400 dark:text-slate-500 mx-auto mb-2" />
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Click to upload or drag and drop</p>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500">PNG, JPG up to 5MB</p>
                                 </div>
                             </div>
                         </div>
@@ -282,7 +282,7 @@ export default function CreateEventPage() {
                                         placeholder="Street address"
                                         className="border-gray-200 focus:border-[#AC1212] focus:ring-[#AC1212] pl-10"
                                     />
-                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -343,30 +343,30 @@ export default function CreateEventPage() {
                                         min="1"
                                         className="border-gray-200 focus:border-[#AC1212] focus:ring-[#AC1212] pl-10"
                                     />
-                                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                                 </div>
                             </div>
 
                             {/* Ticketing Toggle */}
                             <Separator />
 
-                            <div className="border rounded-xl p-4 space-y-4 bg-gray-50/50">
+                            <div className="border rounded-xl p-4 space-y-4 bg-gray-50/50 dark:bg-gray-800">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <Label className="text-base">Event Type</Label>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
                                             {formData.isFree ? 'Free event (RSVP only)' : 'Paid event (requires ticket)'}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className={`text-sm ${formData.isFree ? 'text-[#AC1212] font-medium' : 'text-gray-400'}`}>Free</span>
+                                        <span className={`text-sm ${formData.isFree ? 'text-[#AC1212] font-medium dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>Free</span>
                                         <Switch
                                             checked={!formData.isFree}
                                             onCheckedChange={(checked) =>
                                                 setFormData(prev => ({ ...prev, isFree: !checked }))
                                             }
                                         />
-                                        <span className={`text-sm ${!formData.isFree ? 'text-[#AC1212] font-medium' : 'text-gray-400'}`}>Paid</span>
+                                        <span className={`text-sm ${!formData.isFree ? 'text-[#AC1212] font-medium dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>Paid</span>
                                     </div>
                                 </div>
 
@@ -385,7 +385,7 @@ export default function CreateEventPage() {
                                                 placeholder="0.00"
                                                 className="border-gray-200 focus:border-[#AC1212] focus:ring-[#AC1212] pl-10"
                                             />
-                                            <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                                         </div>
                                     </div>
                                 )}
@@ -417,7 +417,7 @@ export default function CreateEventPage() {
                     </Link>
                     <Button
                         type="submit"
-                        className="flex-1 bg-[#AC1212] hover:bg-[#8a0f0f] shadow-lg shadow-[#AC1212]/25 font-medium"
+                        className="flex-1 bg-[#AC1212] hover:bg-[#8a0f0f] shadow-lg shadow-[#AC1212]/25 font-medium text-white"
                         disabled={loading}
                     >
                         {loading ? (
