@@ -1,14 +1,39 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Heart } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Calendar, MapPin, Heart, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { favoritesApi } from '@/lib/api';
 
 export default function FavoritesPage() {
     const { user } = useAuth();
+    const [events, setEvents] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        const fetchFavorites = async () => {
+            if (!user) return;
+
+            try {
+                setLoading(true);
+                const response = await favoritesApi.getFavorites();
+                setEvents(response.data.events || []);
+            } catch (err: any) {
+                console.error('Failed to fetch favorites:', err);
+                setError('Failed to load favorites');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFavorites();
+    }, [user]);
 
     if (!user) {
         return (
@@ -27,23 +52,13 @@ export default function FavoritesPage() {
         );
     }
 
-    // Mock favorite events data
-    const favoriteEvents = [
-        {
-            id: 1,
-            title: 'Startup Summit 2024',
-            date: 'May 10, 2024',
-            location: 'Seattle, WA',
-            category: 'Business',
-        },
-        {
-            id: 2,
-            title: 'Food & Wine Festival',
-            date: 'June 5, 2024',
-            location: 'Napa Valley, CA',
-            category: 'Food',
-        },
-    ];
+    const formatDate = (dateStr: string) => {
+        return new Date(dateStr).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -55,7 +70,27 @@ export default function FavoritesPage() {
                         <p className="text-muted-foreground">Events you have saved for later</p>
                     </div>
 
-                    {favoriteEvents.length === 0 ? (
+                    {loading && (
+                        <div className="text-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#AC1212] mx-auto"></div>
+                            <p className="mt-4 text-muted-foreground">Loading your favorites...</p>
+                        </div>
+                    )}
+
+                    {error && !loading && (
+                        <div className="text-center py-12">
+                            <p className="text-red-500">{error}</p>
+                            <Button
+                                variant="outline"
+                                className="mt-4"
+                                onClick={() => window.location.reload()}
+                            >
+                                Try Again
+                            </Button>
+                        </div>
+                    )}
+
+                    {!loading && !error && events.length === 0 && (
                         <div className="text-center py-12">
                             <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                             <h2 className="text-xl font-semibold mb-2">No saved events</h2>
@@ -64,31 +99,32 @@ export default function FavoritesPage() {
                                 <Link href="/">Explore Events</Link>
                             </Button>
                         </div>
-                    ) : (
+                    )}
+
+                    {!loading && !error && events.length > 0 && (
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            {favoriteEvents.map((event) => (
-                                <div
-                                    key={event.id}
-                                    className="rounded-lg border bg-card p-6 shadow-sm"
-                                >
-                                    <div className="mb-4 flex items-center justify-between">
-                                        <span className="inline-block rounded-full bg-[#AC1212]/10 px-3 py-1 text-xs font-medium text-[#AC1212]">
-                                            {event.category}
-                                        </span>
-                                        <Heart className="h-5 w-5 fill-current text-red-500" />
-                                    </div>
-                                    <h3 className="mb-2 text-xl font-semibold">{event.title}</h3>
-                                    <div className="space-y-2 text-sm text-muted-foreground">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4" />
-                                            {event.date}
+                            {events.map((event) => (
+                                <Card key={event.id} className="overflow-hidden">
+                                    <CardContent className="p-6">
+                                        <div className="mb-4 flex items-center justify-between">
+                                            <span className="inline-block rounded-full bg-[#AC1212]/10 px-3 py-1 text-xs font-medium text-[#AC1212]">
+                                                {event.category}
+                                            </span>
+                                            <Heart className="h-5 w-5 fill-current text-red-500" />
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4" />
-                                            {event.location}
+                                        <h3 className="mb-2 text-xl font-semibold">{event.title}</h3>
+                                        <div className="space-y-2 text-sm text-muted-foreground">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4" />
+                                                {formatDate(event.date)}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <MapPin className="h-4 w-4" />
+                                                {event.location_venue || event.location || 'Location TBD'}
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    </CardContent>
+                                </Card>
                             ))}
                         </div>
                     )}

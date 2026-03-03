@@ -271,4 +271,127 @@ router.patch('/notifications/:id/read', authenticate, async (req, res) => {
     }
 });
 
+/**
+ * GET /user/favorites
+ * Get all favorited events for the current user
+ */
+router.get('/favorites', authenticate, async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT e.*, f.created_at as favorited_at
+             FROM favorites f
+             JOIN events e ON f.event_id = e.id
+             WHERE f.user_id = $1
+             ORDER BY f.created_at DESC`,
+            [req.user.id]
+        );
+
+        res.json({
+            success: true,
+            data: {
+                events: result.rows
+            }
+        });
+    } catch (error) {
+        console.error('Get favorites error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting favorites'
+        });
+    }
+});
+
+/**
+ * POST /user/favorites/:eventId
+ * Add an event to favorites
+ */
+router.post('/favorites/:eventId', authenticate, async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        // Check if event exists
+        const eventCheck = await db.query(
+            'SELECT id FROM events WHERE id = $1',
+            [eventId]
+        );
+
+        if (eventCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+
+        // Check if already favorited
+        const existingFav = await db.query(
+            'SELECT id FROM favorites WHERE user_id = $1 AND event_id = $2',
+            [req.user.id, eventId]
+        );
+
+        if (existingFav.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Event already in favorites'
+            });
+        }
+
+        // Add to favorites
+        await db.query(
+            'INSERT INTO favorites (user_id, event_id) VALUES ($1, $2)',
+            [req.user.id, eventId]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Event added to favorites'
+        });
+    } catch (error) {
+        console.error('Add favorite error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error adding favorite'
+        });
+    }
+});
+
+/**
+ * DELETE /user/favorites/:eventId
+ * Remove an event from favorites
+ */
+router.delete('/favorites/:eventId', authenticate, async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        // Check if favorite exists
+        const existingFav = await db.query(
+            'SELECT id FROM favorites WHERE user_id = $1 AND event_id = $2',
+            [req.user.id, eventId]
+        );
+
+        if (existingFav.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Favorite not found'
+            });
+        }
+
+        // Remove from favorites
+        await db.query(
+            'DELETE FROM favorites WHERE user_id = $1 AND event_id = $2',
+            [req.user.id, eventId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Event removed from favorites'
+        });
+    } catch (error) {
+        console.error('Remove favorite error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error removing favorite'
+        });
+    }
+});
+
 module.exports = router;

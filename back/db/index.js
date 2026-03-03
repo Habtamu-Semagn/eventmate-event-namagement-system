@@ -50,14 +50,63 @@ module.exports = {
 
             console.log('Initializing database schema...');
 
-            // Split and execute each statement - ignore errors (tables may already exist)
-            const statements = schema.split(';');
+            // Better SQL splitter that handles comments properly
+            function splitSQL(sql) {
+                const statements = [];
+                let current = '';
+                let inString = false;
+                let parenDepth = 0;
+                let i = 0;
+
+                while (i < sql.length) {
+                    const char = sql[i];
+
+                    // Handle string literals
+                    if (char === "'" && (i === 0 || sql[i - 1] !== '\\')) {
+                        inString = !inString;
+                    }
+
+                    // Track parentheses
+                    if (char === '(' && !inString) parenDepth++;
+                    if (char === ')' && !inString) parenDepth--;
+
+                    // Split at semicolons outside of strings and parentheses
+                    if (char === ';' && !inString && parenDepth === 0) {
+                        if (current.trim()) {
+                            statements.push(current.trim());
+                        }
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                    i++;
+                }
+
+                // Add last statement if any
+                if (current.trim()) {
+                    statements.push(current.trim());
+                }
+
+                return statements;
+            }
+
+            // Check if a statement is only comments
+            function isOnlyComment(stmt) {
+                const trimmed = stmt.trim();
+                const withoutLineComments = trimmed.split('\n')
+                    .filter(line => !line.trim().startsWith('--'))
+                    .join(' ')
+                    .trim();
+                return withoutLineComments === '' || withoutLineComments.startsWith('/*');
+            }
+
+            const statements = splitSQL(schema);
+            console.log(`Found ${statements.length} statements to execute`);
 
             for (const stmt of statements) {
-                const trimmed = stmt.trim();
-                if (trimmed && !trimmed.startsWith('--')) {
+                if (stmt && !isOnlyComment(stmt)) {
                     try {
-                        await pool.query(trimmed);
+                        await pool.query(stmt);
                     } catch (e) {
                         // Ignore errors - table may already exist
                     }

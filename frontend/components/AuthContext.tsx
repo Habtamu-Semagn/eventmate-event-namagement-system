@@ -1,16 +1,19 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, JSX } from 'react';
+import { authApi, setToken, removeToken } from '@/lib/api';
 
 interface User {
-    email: string | null;
-    uid: string;
+    id: number;
+    email: string;
+    name: string;
+    role: string;
 }
 
 interface UserData {
-    displayName: string | null;
+    displayName: string;
     role: string;
-    email: string | null;
+    email: string;
 }
 
 interface AuthContextType {
@@ -18,69 +21,92 @@ interface AuthContextType {
     userData: UserData | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string, displayName: string, role: string) => Promise<void>;
+    signUp: (name: string, email: string, password: string) => Promise<void>;
     signOut: () => Promise<void>;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
     const [user, setUser] = useState<User | null>(null);
     const [userData, setUserData] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(true);
 
+    // Load user on mount
     useEffect(() => {
-        // Check for stored auth state
-        const storedUser = localStorage.getItem('eventmate_user');
-        const storedUserData = localStorage.getItem('eventmate_user_data');
+        const loadUser = async () => {
+            const token = localStorage.getItem('eventmate_token');
+            if (token) {
+                try {
+                    const response = await authApi.getCurrentUser();
+                    const userInfo = response.data.user;
+                    setUser(userInfo);
+                    setUserData({
+                        displayName: userInfo.name,
+                        role: userInfo.role,
+                        email: userInfo.email,
+                    });
+                } catch (error) {
+                    console.error('Failed to load user:', error);
+                    removeToken();
+                }
+            }
+            setLoading(false);
+        };
 
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-        if (storedUserData) {
-            setUserData(JSON.parse(storedUserData));
-        }
-        setLoading(false);
+        loadUser();
     }, []);
 
-    const signIn = async (email: string, password: string) => {
-        // Simulated sign in - in real app, this would call Firebase/auth API
-        const mockUser: User = { email, uid: 'user_' + Date.now() };
-        const mockUserData: UserData = {
-            displayName: email.split('@')[0],
-            role: 'registered_user',
-            email
-        };
-
-        setUser(mockUser);
-        setUserData(mockUserData);
-        localStorage.setItem('eventmate_user', JSON.stringify(mockUser));
-        localStorage.setItem('eventmate_user_data', JSON.stringify(mockUserData));
+    const refreshUser = async () => {
+        try {
+            const response = await authApi.getCurrentUser();
+            const userInfo = response.data.user;
+            setUser(userInfo);
+            setUserData({
+                displayName: userInfo.name,
+                role: userInfo.role,
+                email: userInfo.email,
+            });
+        } catch (error) {
+            console.error('Failed to refresh user:', error);
+        }
     };
 
-    const signUp = async (email: string, password: string, displayName: string, role: string) => {
-        const mockUser: User = { email, uid: 'user_' + Date.now() };
-        const mockUserData: UserData = {
-            displayName,
-            role,
-            email
-        };
+    const signIn = async (email: string, password: string) => {
+        const response = await authApi.login({ email, password });
+        const { user: userInfo, token } = response.data;
 
-        setUser(mockUser);
-        setUserData(mockUserData);
-        localStorage.setItem('eventmate_user', JSON.stringify(mockUser));
-        localStorage.setItem('eventmate_user_data', JSON.stringify(mockUserData));
+        setToken(token);
+        setUser(userInfo);
+        setUserData({
+            displayName: userInfo.name,
+            role: userInfo.role,
+            email: userInfo.email,
+        });
+    };
+
+    const signUp = async (name: string, email: string, password: string) => {
+        const response = await authApi.register({ name, email, password });
+        const { user: userInfo, token } = response.data;
+
+        setToken(token);
+        setUser(userInfo);
+        setUserData({
+            displayName: userInfo.name,
+            role: userInfo.role,
+            email: userInfo.email,
+        });
     };
 
     const signOut = async () => {
+        removeToken();
         setUser(null);
         setUserData(null);
-        localStorage.removeItem('eventmate_user');
-        localStorage.removeItem('eventmate_user_data');
     };
 
     return (
-        <AuthContext.Provider value={{ user, userData, loading, signIn, signUp, signOut }}>
+        <AuthContext.Provider value={{ user, userData, loading, signIn, signUp, signOut, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

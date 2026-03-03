@@ -474,7 +474,7 @@ router.post('/:id/rsvp', authenticate, registrationValidation.rsvp, async (req, 
 });
 
 /**
- * POST /events/:id/purchase
+ * GET /events/:id/purchase
  * Purchase tickets for paid events (BR-06)
  */
 router.post('/:id/purchase', authenticate, registrationValidation.purchase, async (req, res) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthContext';
 import Navbar from '@/components/Navbar';
@@ -10,13 +10,23 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Mail, Save } from 'lucide-react';
+import { userApi } from '@/lib/api';
 
 export default function ProfilePage() {
     const router = useRouter();
-    const { user, userData, signOut } = useAuth();
-    const [displayName, setDisplayName] = useState(userData?.displayName || '');
-    const [email, setEmail] = useState(user?.email || '');
+    const { user, userData, signOut, refreshUser } = useAuth();
+    const [displayName, setDisplayName] = useState('');
+    const [email, setEmail] = useState('');
     const [saving, setSaving] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (userData) {
+            setDisplayName(userData.displayName || '');
+            setEmail(userData.email || '');
+        }
+    }, [userData]);
 
     if (!user) {
         return (
@@ -38,10 +48,19 @@ export default function ProfilePage() {
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setSaving(true);
-        // In a real app, this would update the user profile via API
-        setTimeout(() => {
+        setError('');
+        setSuccess(false);
+
+        try {
+            await userApi.updateProfile(displayName);
+            await refreshUser();
+            setSuccess(true);
+            setTimeout(() => setSuccess(false), 3000);
+        } catch (err: any) {
+            setError(err.message || 'Failed to update profile');
+        } finally {
             setSaving(false);
-        }, 1000);
+        }
     };
 
     const getInitials = (name: string) => {
@@ -81,6 +100,16 @@ export default function ProfilePage() {
                             </CardHeader>
                             <CardContent>
                                 <form onSubmit={handleSubmit} className="space-y-4">
+                                    {success && (
+                                        <div className="rounded-md bg-green-50 p-3 text-sm text-green-500 dark:bg-green-900/20">
+                                            Profile updated successfully!
+                                        </div>
+                                    )}
+                                    {error && (
+                                        <div className="rounded-md bg-red-50 p-3 text-sm text-red-500 dark:bg-red-900/20">
+                                            {error}
+                                        </div>
+                                    )}
                                     <div className="space-y-2">
                                         <label htmlFor="displayName" className="text-sm font-medium flex items-center gap-2">
                                             <User className="h-4 w-4" />

@@ -1,89 +1,67 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, MapPin, Users, Search, Filter } from 'lucide-react';
-
-// Mock events data
-const mockEvents = [
-    {
-        id: 1,
-        title: 'Tech Conference 2024',
-        description: 'Join us for the biggest tech conference of the year featuring industry leaders and innovators.',
-        date: 'March 15, 2024',
-        location: 'San Francisco, CA',
-        attendees: 500,
-        category: 'Technology',
-        image: '/file.svg',
-    },
-    {
-        id: 2,
-        title: 'Music Festival',
-        description: 'Experience three days of live music from top artists around the world.',
-        date: 'April 20, 2024',
-        location: 'Austin, TX',
-        attendees: 2000,
-        category: 'Music',
-        image: '/file.svg',
-    },
-    {
-        id: 3,
-        title: 'Art Exhibition',
-        description: 'Explore contemporary art from emerging artists in our annual exhibition.',
-        date: 'May 5, 2024',
-        location: 'New York, NY',
-        attendees: 150,
-        category: 'Art',
-        image: '/file.svg',
-    },
-    {
-        id: 4,
-        title: 'Startup Summit',
-        description: 'Network with entrepreneurs and investors at this premier startup event.',
-        date: 'May 10, 2024',
-        location: 'Seattle, WA',
-        attendees: 300,
-        category: 'Business',
-        image: '/file.svg',
-    },
-    {
-        id: 5,
-        title: 'Food & Wine Festival',
-        description: 'Sample cuisines from top chefs and wines from around the world.',
-        date: 'June 5, 2024',
-        location: 'Napa Valley, CA',
-        attendees: 400,
-        category: 'Food',
-        image: '/file.svg',
-    },
-    {
-        id: 6,
-        title: 'Sports Championship',
-        description: 'Watch the finals of our annual sports championship.',
-        date: 'June 15, 2024',
-        location: 'Chicago, IL',
-        attendees: 1000,
-        category: 'Sports',
-        image: '/file.svg',
-    },
-];
+import { Calendar, MapPin, Users, Search, Heart, Loader2 } from 'lucide-react';
+import { eventsApi, registrationsApi, Event } from '@/lib/api';
+import { useAuth } from '@/components/AuthContext';
 
 const categories = ['All', 'Technology', 'Music', 'Art', 'Business', 'Food', 'Sports'];
 
 export default function EventsPage() {
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const [events, setEvents] = useState<Event[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [registeringEventId, setRegisteringEventId] = useState<number | null>(null);
 
-    const filteredEvents = mockEvents.filter((event) => {
-        const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            event.description.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === 'All' || event.category === selectedCategory;
-        return matchesSearch && matchesCategory;
-    });
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                setLoading(true);
+                const response = await eventsApi.getAll({
+                    category: selectedCategory !== 'All' ? selectedCategory : undefined,
+                    search: searchQuery || undefined,
+                });
+                setEvents(response.data.events);
+            } catch (err: any) {
+                console.error('Failed to fetch events:', err);
+                setError('Failed to load events');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        // Debounce search
+        const timeoutId = setTimeout(() => {
+            fetchEvents();
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [selectedCategory, searchQuery]);
+
+    const handleRegister = async (eventId: number) => {
+        if (!user) {
+            window.location.href = '/login';
+            return;
+        }
+
+        try {
+            setRegisteringEventId(eventId);
+            await registrationsApi.register(eventId);
+            alert('Successfully registered for the event!');
+        } catch (err: any) {
+            alert(err.message || 'Failed to register for event');
+        } finally {
+            setRegisteringEventId(null);
+        }
+    };
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -109,7 +87,6 @@ export default function EventsPage() {
                             />
                         </div>
                         <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4 text-muted-foreground" />
                             <div className="flex gap-2 flex-wrap">
                                 {categories.map((category) => (
                                     <Button
@@ -126,16 +103,40 @@ export default function EventsPage() {
                         </div>
                     </div>
 
+                    {/* Loading State */}
+                    {loading && (
+                        <div className="text-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#AC1212] mx-auto"></div>
+                            <p className="mt-4 text-muted-foreground">Loading events...</p>
+                        </div>
+                    )}
+
+                    {/* Error State */}
+                    {error && !loading && (
+                        <div className="text-center py-12">
+                            <p className="text-red-500">{error}</p>
+                            <Button
+                                variant="outline"
+                                className="mt-4"
+                                onClick={() => window.location.reload()}
+                            >
+                                Try Again
+                            </Button>
+                        </div>
+                    )}
+
                     {/* Events Grid */}
-                    {filteredEvents.length === 0 ? (
+                    {!loading && !error && events.length === 0 && (
                         <div className="text-center py-12">
                             <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                             <h2 className="text-xl font-semibold mb-2">No events found</h2>
                             <p className="text-muted-foreground">Try adjusting your search or filters</p>
                         </div>
-                    ) : (
+                    )}
+
+                    {!loading && !error && events.length > 0 && (
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            {filteredEvents.map((event) => (
+                            {events.map((event) => (
                                 <Card key={event.id} className="overflow-hidden">
                                     <div className="aspect-video bg-muted flex items-center justify-center">
                                         <Calendar className="h-12 w-12 text-muted-foreground" />
@@ -155,21 +156,25 @@ export default function EventsPage() {
                                         <div className="space-y-2 text-sm text-muted-foreground">
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="h-4 w-4" />
-                                                {event.date}
+                                                {new Date(event.date).toLocaleDateString()} at {event.time}
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <MapPin className="h-4 w-4" />
-                                                {event.location}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Users className="h-4 w-4" />
-                                                {event.attendees} attending
+                                                {event.location_venue || event.location || 'Location TBD'}
                                             </div>
                                         </div>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full bg-[#AC1212] hover:bg-[#8a0f0f]">
-                                            Register Now
+                                        <Button
+                                            className="w-full bg-[#AC1212] hover:bg-[#8a0f0f]"
+                                            onClick={() => handleRegister(event.id)}
+                                            disabled={registeringEventId === event.id}
+                                        >
+                                            {registeringEventId === event.id ? (
+                                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Registering...</>
+                                            ) : (
+                                                'Register Now'
+                                            )}
                                         </Button>
                                     </CardFooter>
                                 </Card>

@@ -36,10 +36,10 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            await signUp(email, password, displayName, 'registered_user');
+            await signUp(displayName, email, password);
             router.push('/');
-        } catch (err) {
-            setError('Failed to create account');
+        } catch (err: any) {
+            setError(err.message || 'Failed to create account');
         } finally {
             setLoading(false);
         }

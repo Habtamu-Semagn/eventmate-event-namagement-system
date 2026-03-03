@@ -12,13 +12,22 @@ const adminRoutes = require('./routes/admin');
 const notificationRoutes = require('./routes/notifications');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+const corsOptions = {
+    origin: function (origin, callback) {
+        const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173'];
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
-}));
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -179,7 +188,7 @@ const startServer = async () => {
             try {
                 await db.initialize();
             } catch (initError) {
-                console.log('Note: Database initialization skipped - schema may already exist');
+                console.log('Database initialization note:', initError.message);
             }
         }
 
