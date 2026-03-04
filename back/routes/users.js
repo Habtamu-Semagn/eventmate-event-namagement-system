@@ -272,6 +272,30 @@ router.patch('/notifications/:id/read', authenticate, async (req, res) => {
 });
 
 /**
+ * PATCH /user/notifications/read-all
+ * Mark all notifications for the current user as read
+ */
+router.patch('/notifications/read-all', authenticate, async (req, res) => {
+    try {
+        await db.query(
+            'UPDATE notifications SET is_read = TRUE WHERE user_id = $1 AND is_read = FALSE',
+            [req.user.id]
+        );
+
+        res.json({
+            success: true,
+            message: 'All notifications marked as read'
+        });
+    } catch (error) {
+        console.error('Mark all notifications read error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error marking all notifications as read'
+        });
+    }
+});
+
+/**
  * GET /user/favorites
  * Get all favorited events for the current user
  */

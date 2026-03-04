@@ -1,12 +1,56 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, Ticket, ArrowRight, Star } from 'lucide-react';
+import { Calendar, Users, Ticket, ArrowRight, Star, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { publicApi, getUser } from '@/lib/api';
 
 export default function Home() {
+  const router = useRouter();
+  const [stats, setStats] = useState<{ total_users: number, total_events: number, total_registrations: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Redirect logged-in users to their role-specific page
+    const user = getUser();
+    if (user) {
+      switch (user.role) {
+        case 'Administrator':
+          router.replace('/admin');
+          return;
+        case 'Organizer':
+          router.replace('/organiser');
+          return;
+        default:
+          // Registered User -> events page
+          router.replace('/events');
+          return;
+      }
+    }
+
+    // Not logged in — fetch public stats for landing page
+    const fetchStats = async () => {
+      try {
+        const response = await publicApi.getStats();
+        setStats(response.data.stats);
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, [router]);
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K+';
+    return num.toString();
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       {/* Navigation Bar */}
@@ -14,6 +58,8 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1">
+        {/* ... (Hero, Features, How It Works sections remain the same) */}
+
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-b from-red-50 to-white dark:from-red-950/20 dark:to-background py-20">
           <div className="container mx-auto px-4">
@@ -136,15 +182,21 @@ export default function Home() {
           <div className="container mx-auto px-4">
             <div className="grid gap-8 md:grid-cols-4">
               <div className="text-center">
-                <div className="mb-2 text-4xl font-bold text-[#AC1212]">10K+</div>
+                <div className="mb-2 text-4xl font-bold text-[#AC1212]">
+                  {loading ? <Loader2 className="h-8 w-8 animate-spin mx-auto" /> : formatNumber(stats?.total_events || 0)}
+                </div>
                 <div className="text-muted-foreground">Events Created</div>
               </div>
               <div className="text-center">
-                <div className="mb-2 text-4xl font-bold text-[#AC1212]">50K+</div>
+                <div className="mb-2 text-4xl font-bold text-[#AC1212]">
+                  {loading ? <Loader2 className="h-8 w-8 animate-spin mx-auto" /> : formatNumber(stats?.total_users || 0)}
+                </div>
                 <div className="text-muted-foreground">Active Users</div>
               </div>
               <div className="text-center">
-                <div className="mb-2 text-4xl font-bold text-[#AC1212]">100K+</div>
+                <div className="mb-2 text-4xl font-bold text-[#AC1212]">
+                  {loading ? <Loader2 className="h-8 w-8 animate-spin mx-auto" /> : formatNumber(stats?.total_registrations || 0)}
+                </div>
                 <div className="text-muted-foreground">Tickets Sold</div>
               </div>
               <div className="text-center">

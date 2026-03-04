@@ -16,27 +16,27 @@ router.get('/', optionalAuth, eventValidation.list, async (req, res) => {
     try {
         const { category, date, search, page = 1, limit = 20 } = req.query;
 
-        const conditions = ["status = 'Approved'"];
+        const conditions = ["e.status = 'Approved'"];
         const values = [];
         let paramCount = 1;
 
         // Filter by category
         if (category) {
-            conditions.push(`category = $${paramCount}`);
+            conditions.push(`e.category = $${paramCount}`);
             values.push(category);
             paramCount++;
         }
 
         // Filter by date
         if (date) {
-            conditions.push(`date = $${paramCount}`);
+            conditions.push(`e.date = $${paramCount}`);
             values.push(date);
             paramCount++;
         }
 
         // Search in title and description
         if (search) {
-            conditions.push(`(title ILIKE $${paramCount} OR description ILIKE $${paramCount})`);
+            conditions.push(`(e.title ILIKE $${paramCount} OR e.description ILIKE $${paramCount})`);
             values.push(`%${search}%`);
             paramCount++;
         }
@@ -45,7 +45,7 @@ router.get('/', optionalAuth, eventValidation.list, async (req, res) => {
 
         // Get total count
         const countResult = await db.query(
-            `SELECT COUNT(*) FROM events WHERE ${whereClause}`,
+            `SELECT COUNT(*) FROM events e WHERE ${whereClause}`,
             values
         );
 

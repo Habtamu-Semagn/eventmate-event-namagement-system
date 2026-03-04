@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,56 +24,88 @@ import {
 import {
     Search,
     Download,
-    Filter,
     User,
     Calendar,
     LogIn,
-    LogOut,
     Edit,
-    Trash2,
     Shield,
     Settings,
-    Bell,
     AlertTriangle,
     CheckCircle,
     XCircle,
-    Clock
+    Clock,
+    Loader2,
+    RefreshCcw,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react"
-
-// Mock audit data
-const mockAuditLogs = [
-    { id: '1', action: 'User Login', user: 'admin@eventmate.com', ip: '192.168.1.100', timestamp: '2026-03-02 09:45:32', status: 'success', category: 'Authentication' },
-    { id: '2', action: 'Event Created', user: 'john.doe@email.com', ip: '192.168.1.45', timestamp: '2026-03-02 09:30:15', status: 'success', category: 'Events' },
-    { id: '3', action: 'User Deleted', user: 'admin@eventmate.com', ip: '192.168.1.100', timestamp: '2026-03-02 08:15:00', status: 'warning', category: 'Users' },
-    { id: '4', action: 'Content Updated', user: 'sarah.wilson@email.com', ip: '192.168.1.78', timestamp: '2026-03-02 07:45:22', status: 'success', category: 'Content' },
-    { id: '5', action: 'Failed Login Attempt', user: 'unknown', ip: '192.168.1.200', timestamp: '2026-03-02 06:20:10', status: 'error', category: 'Authentication' },
-    { id: '6', action: 'User Role Changed', user: 'admin@eventmate.com', ip: '192.168.1.100', timestamp: '2026-03-01 22:30:45', status: 'success', category: 'Users' },
-    { id: '7', action: 'Event Approved', user: 'admin@eventmate.com', ip: '192.168.1.100', timestamp: '2026-03-01 20:15:33', status: 'success', category: 'Events' },
-    { id: '8', action: 'Settings Modified', user: 'admin@eventmate.com', ip: '192.168.1.100', timestamp: '2026-03-01 18:00:00', status: 'success', category: 'Settings' },
-    { id: '9', action: 'Password Reset', user: 'mike.johnson@email.com', ip: '192.168.1.55', timestamp: '2026-03-01 15:45:18', status: 'success', category: 'Authentication' },
-    { id: '10', action: 'Unauthorized Access Attempt', user: 'unknown', ip: '192.168.1.250', timestamp: '2026-03-01 12:30:00', status: 'error', category: 'Security' },
-]
+import { adminApi } from '@/lib/api'
 
 export default function AdminAuditPage() {
     const { theme } = useTheme()
+    const [logs, setLogs] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [categoryFilter, setCategoryFilter] = useState('all')
     const [statusFilter, setStatusFilter] = useState('all')
-
-    const filteredLogs = mockAuditLogs.filter(log => {
-        const matchesSearch = log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            log.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            log.ip.includes(searchQuery);
-        const matchesCategory = categoryFilter === 'all' || log.category === categoryFilter;
-        const matchesStatus = statusFilter === 'all' || log.status === statusFilter;
-        return matchesSearch && matchesCategory && matchesStatus;
+    const [page, setPage] = useState(1)
+    const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 })
+    const [stats, setStats] = useState({
+        success: 0,
+        warning: 0,
+        error: 0,
+        total: 0
     })
 
-    const getStatusBadge = (status: string) => {
+    const fetchLogs = useCallback(async () => {
+        try {
+            setLoading(true)
+            const res = await adminApi.getAuditLogs({
+                page,
+                limit: 10,
+                category: categoryFilter === 'all' ? undefined : categoryFilter,
+                status: statusFilter === 'all' ? undefined : statusFilter
+            })
+            if (res.success) {
+                setLogs(res.data.logs)
+                setPagination(res.data.pagination)
+                setStats({
+                    success: parseInt(res.data.stats.success_count || 0),
+                    warning: parseInt(res.data.stats.warning_count || 0),
+                    error: parseInt(res.data.stats.error_count || 0),
+                    total: parseInt(res.data.stats.total || 0)
+                })
+            }
+            setError(null)
+        } catch (err: any) {
+            console.error('Error fetching logs:', err)
+            setError(err.message || 'Failed to fetch audit logs')
+        } finally {
+            setLoading(false)
+        }
+    }, [page, categoryFilter, statusFilter])
+
+    useEffect(() => {
+        fetchLogs()
+    }, [fetchLogs])
+
+    const filteredLogs = logs.filter(log => {
+        const action = log.action || ''
+        const user = log.user_email || 'unknown'
+        const ip = log.ip_address || ''
+        const matchesSearch = action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            ip.includes(searchQuery);
+        return matchesSearch;
+    })
+
+    const getStatusBadge = (log: any) => {
+        const status = log.details?.status || 'success'
         const styles: Record<string, string> = {
-            success: theme === "dark" ? "bg-green-900/30 text-green-400 border-green-800" : "bg-green-100 text-green-700 border-green-200",
-            warning: theme === "dark" ? "bg-yellow-900/30 text-yellow-400 border-yellow-800" : "bg-yellow-100 text-yellow-700 border-yellow-200",
-            error: theme === "dark" ? "bg-red-900/30 text-red-400 border-red-800" : "bg-red-100 text-red-700 border-red-200",
+            success: theme === "dark" ? "bg-green-900/30 text-green-400 border-green-800 font-normal" : "bg-green-100 text-green-700 border-green-200 font-normal",
+            warning: theme === "dark" ? "bg-yellow-900/30 text-yellow-400 border-yellow-800 font-normal" : "bg-yellow-100 text-yellow-700 border-yellow-200 font-normal",
+            error: theme === "dark" ? "bg-red-900/30 text-red-400 border-red-800 font-normal" : "bg-red-100 text-red-700 border-red-200 font-normal",
         };
         return styles[status] || styles.success;
     }
@@ -90,10 +122,6 @@ export default function AdminAuditPage() {
         return icons[category] || LogIn;
     }
 
-    const successCount = mockAuditLogs.filter(l => l.status === 'success').length
-    const warningCount = mockAuditLogs.filter(l => l.status === 'warning').length
-    const errorCount = mockAuditLogs.filter(l => l.status === 'error').length
-
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -102,10 +130,16 @@ export default function AdminAuditPage() {
                     <h1 className={`text-3xl font-bold tracking-tight ${theme === "dark" ? "text-slate-100" : ""}`}>Audit Trail</h1>
                     <p className={theme === "dark" ? "text-slate-400" : "text-muted-foreground"}>Track and monitor system activities</p>
                 </div>
-                <Button variant="outline" className={theme === "dark" ? "border-slate-700 hover:bg-slate-800" : ""}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export Logs
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={fetchLogs} variant="outline" size="sm" className="flex items-center gap-2">
+                        <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </Button>
+                    <Button variant="outline" size="sm" className={theme === "dark" ? "border-slate-700 hover:bg-slate-800" : ""}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export
+                    </Button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -117,7 +151,7 @@ export default function AdminAuditPage() {
                                 <CheckCircle className="h-6 w-6 text-green-500" />
                             </div>
                             <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{successCount}</p>
+                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{stats.success}</p>
                                 <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Successful</p>
                             </div>
                         </div>
@@ -130,7 +164,7 @@ export default function AdminAuditPage() {
                                 <AlertTriangle className="h-6 w-6 text-yellow-500" />
                             </div>
                             <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{warningCount}</p>
+                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{stats.warning}</p>
                                 <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Warnings</p>
                             </div>
                         </div>
@@ -143,7 +177,7 @@ export default function AdminAuditPage() {
                                 <XCircle className="h-6 w-6 text-red-500" />
                             </div>
                             <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{errorCount}</p>
+                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{stats.error}</p>
                                 <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Errors</p>
                             </div>
                         </div>
@@ -156,7 +190,7 @@ export default function AdminAuditPage() {
                                 <Clock className="h-6 w-6 text-blue-500" />
                             </div>
                             <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{mockAuditLogs.length}</p>
+                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{stats.total}</p>
                                 <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Logs</p>
                             </div>
                         </div>
@@ -179,7 +213,7 @@ export default function AdminAuditPage() {
                         </div>
                         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                             <SelectTrigger className={`w-[180px] ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}>
-                                <SelectValue placeholder="Filter by category" />
+                                <SelectValue placeholder="Category" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Categories</SelectItem>
@@ -193,7 +227,7 @@ export default function AdminAuditPage() {
                         </Select>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className={`w-[180px] ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}>
-                                <SelectValue placeholder="Filter by status" />
+                                <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
@@ -210,48 +244,98 @@ export default function AdminAuditPage() {
             <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
                 <CardHeader>
                     <CardTitle className={theme === "dark" ? "text-slate-100" : ""}>System Activity Log</CardTitle>
-                    <CardDescription className={theme === "dark" ? "text-slate-400" : ""}>Complete audit trail of all system activities</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow className={theme === "dark" ? "border-slate-800" : ""}>
-                                <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Action</TableHead>
-                                <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Category</TableHead>
-                                <TableHead className={theme === "dark" ? "text-slate-400" : ""}>User</TableHead>
-                                <TableHead className={theme === "dark" ? "text-slate-400" : ""}>IP Address</TableHead>
-                                <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Timestamp</TableHead>
-                                <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Status</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredLogs.map((log) => {
-                                const CategoryIcon = getCategoryIcon(log.category)
-                                return (
-                                    <TableRow key={log.id} className={theme === "dark" ? "border-slate-800" : ""}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-lg ${theme === "dark" ? "bg-slate-800" : "bg-slate-100"}`}>
-                                                    <CategoryIcon className="h-4 w-4" />
-                                                </div>
-                                                <span className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{log.action}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{log.category}</TableCell>
-                                        <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{log.user}</TableCell>
-                                        <TableCell className={`font-mono text-sm ${theme === "dark" ? "text-slate-400" : ""}`}>{log.ip}</TableCell>
-                                        <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{log.timestamp}</TableCell>
-                                        <TableCell>
-                                            <Badge className={`${getStatusBadge(log.status)} border capitalize`}>
-                                                {log.status}
-                                            </Badge>
+                    <div className="relative overflow-x-auto rounded-lg">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className={theme === "dark" ? "border-slate-800 hover:bg-transparent" : "hover:bg-transparent"}>
+                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Action</TableHead>
+                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Category</TableHead>
+                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>User</TableHead>
+                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>IP Address</TableHead>
+                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Timestamp</TableHead>
+                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Status</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {loading && logs.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-20">
+                                            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                                            <p className="mt-2 text-muted-foreground text-sm">Loading logs...</p>
                                         </TableCell>
                                     </TableRow>
-                                )
-                            })}
-                        </TableBody>
-                    </Table>
+                                ) : filteredLogs.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-20 text-muted-foreground">
+                                            No logs found.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredLogs.map((log) => {
+                                        const CategoryIcon = getCategoryIcon(log.entity_type)
+                                        return (
+                                            <TableRow key={log.id} className={theme === "dark" ? "border-slate-800" : ""}>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-2 rounded-lg ${theme === "dark" ? "bg-slate-800" : "bg-slate-100"}`}>
+                                                            <CategoryIcon className="h-4 w-4" />
+                                                        </div>
+                                                        <span className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{log.action}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{log.entity_type}</TableCell>
+                                                <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{log.user_email || 'System'}</TableCell>
+                                                <TableCell className={`font-mono text-sm ${theme === "dark" ? "text-slate-400" : ""}`}>{log.ip_address || 'N/A'}</TableCell>
+                                                <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{new Date(log.created_at).toLocaleString()}</TableCell>
+                                                <TableCell>
+                                                    <Badge className={`${getStatusBadge(log)} border capitalize`}>
+                                                        {log.details?.status || 'success'}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
+
+                {/* Pagination */}
+                {pagination.totalPages > 1 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800">
+                        <div className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>
+                            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={pagination.page <= 1}
+                                className={theme === "dark" ? "border-slate-700 hover:bg-slate-800" : ""}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                                Previous
+                            </Button>
+                            <span className={`text-sm ${theme === "dark" ? "text-slate-300" : ""}`}>
+                                Page {pagination.page} of {pagination.totalPages}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                                disabled={pagination.page >= pagination.totalPages}
+                                className={theme === "dark" ? "border-slate-700 hover:bg-slate-800" : ""}
+                            >
+                                Next
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </Card>
         </div>
     )

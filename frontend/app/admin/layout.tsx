@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useTheme } from "@/components/theme-provider"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { getUser } from "@/lib/api"
 import {
     Sheet,
     SheetContent,
@@ -73,7 +74,7 @@ function NavItem({ href, label, icon: Icon, isActive, onClick }: { href: string;
 }
 
 // Mobile Sidebar
-function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function MobileSidebar({ isOpen, onClose, onLogout }: { isOpen: boolean; onClose: () => void; onLogout: () => void }) {
     const pathname = usePathname()
     const { theme, toggleTheme } = useTheme()
 
@@ -158,23 +159,15 @@ function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                 <p className="text-xs text-muted-foreground truncate">admin@eventmate.com</p>
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <Link href="/profile" className="flex-1" onClick={onClose}>
-                                <Button variant="outline" size="sm" className="w-full">
-                                    <Settings className="w-4 h-4 mr-2" />
-                                    Profile
-                                </Button>
-                            </Link>
-                            <Link href="/login" onClick={onClose}>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </Button>
-                            </Link>
-                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full flex items-center justify-center gap-2 text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={onLogout}
+                        >
+                            <LogOut className="w-4 h-4" />
+                            <span>Logout</span>
+                        </Button>
                     </div>
                 </div>
             </SheetContent>
@@ -183,7 +176,7 @@ function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
 }
 
 // Desktop Sidebar
-function DesktopSidebar() {
+function DesktopSidebar({ onLogout }: { onLogout: () => void }) {
     const pathname = usePathname()
     const { theme, toggleTheme } = useTheme()
 
@@ -266,23 +259,15 @@ function DesktopSidebar() {
                             <p className="text-xs text-muted-foreground truncate">admin@eventmate.com</p>
                         </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Link href="/profile" className="flex-1">
-                            <Button variant="outline" size="sm" className="w-full">
-                                <Settings className="w-4 h-4 mr-2" />
-                                Profile
-                            </Button>
-                        </Link>
-                        <Link href="/login">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                            >
-                                <LogOut className="w-4 h-4" />
-                            </Button>
-                        </Link>
-                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full flex items-center justify-center gap-2 text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={onLogout}
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span>Logout</span>
+                    </Button>
                 </div>
             </div>
         </aside>
@@ -296,11 +281,26 @@ export default function AdminLayout({
 }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
+    const router = useRouter()
 
-    // Prevent hydration mismatch
+    // Handle logout
+    const handleLogout = () => {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        }
+        router.push('/login');
+    };
+
+    // Check if user is admin - redirect if not
     useEffect(() => {
+        const user = getUser();
+        if (!user || user.role !== 'Administrator') {
+            router.push('/');
+            return;
+        }
         setMounted(true)
-    }, [])
+    }, [router])
 
     if (!mounted) {
         return null
@@ -317,7 +317,7 @@ export default function AdminLayout({
                                 <Menu className="w-5 h-5" />
                             </Button>
                         </SheetTrigger>
-                        <MobileSidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+                        <MobileSidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} onLogout={handleLogout} />
                     </Sheet>
                     <Link href="/admin" className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
@@ -335,7 +335,7 @@ export default function AdminLayout({
 
             {/* Desktop Sidebar */}
             <div className="hidden lg:block">
-                <DesktopSidebar />
+                <DesktopSidebar onLogout={handleLogout} />
             </div>
 
             {/* Main Content - with left padding for fixed sidebar */}

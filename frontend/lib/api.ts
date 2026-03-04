@@ -1,4 +1,4 @@
-// API base URL - change this to your backend URL
+// API base URL - configure this via NEXT_PUBLIC_API_URL environment variable in production
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Helper to get the auth token from localStorage
@@ -10,6 +10,23 @@ function getToken(): string | null {
 // Helper to set the auth token
 export function setToken(token: string): void {
     localStorage.setItem('eventmate_token', token);
+}
+
+// Helper to set the user data
+export function setUser(user: any): void {
+    localStorage.setItem('eventmate_user', JSON.stringify(user));
+}
+
+// Helper to get the user data
+export function getUser(): any | null {
+    if (typeof window === 'undefined') return null;
+    const userStr = localStorage.getItem('eventmate_user');
+    return userStr ? JSON.parse(userStr) : null;
+}
+
+// Helper to remove the user data
+export function removeUser(): void {
+    localStorage.removeItem('eventmate_user');
 }
 
 // Helper to remove the auth token
@@ -66,6 +83,7 @@ export interface RegisterRequest {
     name: string;
     email: string;
     password: string;
+    role?: string;
 }
 
 export interface AuthResponse {
@@ -130,12 +148,16 @@ export interface Event {
     time: string;
     location_venue?: string;
     location?: string;
+    city?: string;
+    country?: string;
     category: string;
     organizer_id: number;
-    organizer_name: string;
+    organizer_name?: string;
     status: string;
     capacity?: number;
     is_paid?: boolean;
+    image_url?: string;
+    ticket_categories?: any[];
     created_at: string;
 }
 
@@ -219,6 +241,47 @@ export const eventsApi = {
         return fetchApi<OrganizerEventsResponse>(`/events/organizer/my-events${query ? `?${query}` : ''}`);
     },
 
+    getOrganizerRegistrations: (filters?: { event_id?: number | string; status?: string; page?: number; limit?: number }) => {
+        const searchParams = new URLSearchParams();
+        if (filters?.event_id) searchParams.set('event_id', filters.event_id.toString());
+        if (filters?.status && filters.status !== 'all') searchParams.set('status', filters.status);
+        if (filters?.page) searchParams.set('page', filters.page.toString());
+        if (filters?.limit) searchParams.set('limit', filters.limit.toString());
+        const query = searchParams.toString();
+        return fetchApi<{
+            success: boolean;
+            data: {
+                registrations: Array<{
+                    id: number;
+                    user_id: number;
+                    event_id: number;
+                    status: string;
+                    created_at: string;
+                    user_name: string;
+                    user_email: string;
+                    event_title: string;
+                    ticket_type: string | null;
+                    paid_amount: number | null;
+                }>;
+            };
+        }>(`/events/organizer/registrations${query ? `?${query}` : ''}`);
+    },
+
+    getOrganizerStats: () =>
+        fetchApi<{
+            success: boolean;
+            data: {
+                total_events: number;
+                pending_events: number;
+                active_events: number;
+                total_attendees: number;
+                total_revenue: number;
+            }
+        }>('/events/organizer/stats'),
+
+    getOrganizerTickets: () =>
+        fetchApi<{ success: boolean; data: { tickets: any[] } }>('/events/organizer/tickets'),
+
     rsvp: (eventId: number) =>
         fetchApi<{ success: boolean }>(`/events/${eventId}/rsvp`, {
             method: 'POST',
@@ -241,21 +304,40 @@ export interface Registration {
 }
 
 export const registrationsApi = {
-    getMyRegistrations: () =>
-        fetchApi<{ success: boolean; data: { registrations: any[] } }>('/user/registrations'),
+    getMyEvents: () =>
+        fetchApi<{ success: boolean; data: { events: any[] } }>('/user/my-events'),
 
     register: (eventId: number) =>
         fetchApi<{ success: boolean }>(`/events/${eventId}/register`, {
             method: 'POST',
         }),
 
+    purchase: (eventId: number, data: { ticket_type: string, payment_method: string }) =>
+        fetchApi<{ success: boolean }>(`/events/${eventId}/purchase`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+
     cancelRegistration: (eventId: number) =>
         fetchApi<{ success: boolean }>(`/events/${eventId}/register`, {
             method: 'DELETE',
         }),
+};
 
-    getMyEvents: () =>
-        fetchApi<{ success: boolean; data: { events: any[] } }>('/user/my-events'),
+// ============ PUBLIC API ============
+
+export const publicApi = {
+    getStats: () =>
+        fetchApi<{
+            success: boolean;
+            data: {
+                stats: {
+                    total_users: number;
+                    total_events: number;
+                    total_registrations: number;
+                }
+            }
+        }>('/public/stats'),
 };
 
 // ============ FAVORITES API ============
@@ -276,6 +358,37 @@ export const favoritesApi = {
 
     getFavorites: () =>
         fetchApi<{ success: boolean; data: { events: any[] } }>('/user/favorites'),
+};
+
+// ============ NOTIFICATIONS API ============
+
+export interface Notification {
+    id: number;
+    user_id: number;
+    message: string;
+    is_read: boolean;
+    sent_at: string;
+}
+
+export const notificationsApi = {
+    getMyNotifications: () =>
+        fetchApi<{ success: boolean; data: { notifications: Notification[] } }>('/user/notifications'),
+
+    markAsRead: (notificationId: number) =>
+        fetchApi<{ success: boolean }>(`/user/notifications/${notificationId}/read`, {
+            method: 'PATCH',
+        }),
+
+    markAllAsRead: () =>
+        fetchApi<{ success: boolean }>('/user/notifications/read-all', {
+            method: 'PATCH',
+        }),
+
+    send: (userId: number | null, eventId: number | null, message: string) =>
+        fetchApi<{ success: boolean }>('/notifications/send', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId, event_id: eventId, message }),
+        }),
 };
 
 // ============ ADMIN API ============
@@ -308,19 +421,76 @@ export const adminApi = {
             body: JSON.stringify({ status }),
         }),
 
-    getUsers: (params?: { page?: number; limit?: number; role?: string }) => {
+    deleteEvent: (eventId: number) =>
+        fetchApi<{ success: boolean }>(`/admin/events/${eventId}`, {
+            method: 'DELETE',
+        }),
+
+    getAuditLogs: (params?: { page?: number; limit?: number; category?: string; status?: string }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.page) searchParams.set('page', params.page.toString());
+        if (params?.limit) searchParams.set('limit', params.limit.toString());
+        if (params?.category) searchParams.set('category', params.category);
+        if (params?.status) searchParams.set('status', params.status);
+        const query = searchParams.toString();
+        return fetchApi<{ success: boolean; data: { logs: any[]; stats: any; total: number; pagination: any } }>(`/admin/audit${query ? `?${query}` : ''}`);
+    },
+
+    getEvents: (params?: { page?: number; limit?: number; status?: string; category?: string }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.page) searchParams.set('page', params.page.toString());
+        if (params?.limit) searchParams.set('limit', params.limit.toString());
+        if (params?.status) searchParams.set('status', params.status);
+        if (params?.category) searchParams.set('category', params.category);
+        const query = searchParams.toString();
+        return fetchApi<{ success: boolean; data: { events: any[]; pagination: any } }>(`/admin/events${query ? `?${query}` : ''}`);
+    },
+
+    getUsers: (params?: { page?: number; limit?: number; role?: string; status?: string }) => {
         const searchParams = new URLSearchParams();
         if (params?.page) searchParams.set('page', params.page.toString());
         if (params?.limit) searchParams.set('limit', params.limit.toString());
         if (params?.role) searchParams.set('role', params.role);
+        if (params?.status) searchParams.set('status', params.status);
         const query = searchParams.toString();
         return fetchApi<{ success: boolean; data: { users: any[]; pagination: any } }>(`/admin/users${query ? `?${query}` : ''}`);
     },
+
+    getUserDetails: (userId: number) =>
+        fetchApi<{ success: boolean; data: { user: any; events_organized: any[]; events_booked: any[]; stats: any } }>(`/admin/users/${userId}`),
 
     updateUserRole: (userId: number, role: string) =>
         fetchApi<{ success: boolean }>(`/admin/users/${userId}/role`, {
             method: 'PATCH',
             body: JSON.stringify({ role }),
+        }),
+
+    updateUserStatus: (userId: number, status: string) =>
+        fetchApi<{ success: boolean }>(`/admin/users/${userId}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status }),
+        }),
+
+    updateUser: (userId: number, data: { name?: string; role?: string; status?: string }) =>
+        fetchApi<{ success: boolean; data: { user: any } }>(`/admin/users/${userId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        }),
+
+    getReports: (params?: { page?: number; limit?: number; status?: string; type?: string }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.page) searchParams.set('page', params.page.toString());
+        if (params?.limit) searchParams.set('limit', params.limit.toString());
+        if (params?.status) searchParams.set('status', params.status);
+        if (params?.type) searchParams.set('type', params.type);
+        const query = searchParams.toString();
+        return fetchApi<{ success: boolean; data: { reports: any[]; pagination: any } }>(`/admin/reports${query ? `?${query}` : ''}`);
+    },
+
+    updateReportStatus: (reportId: number, status: string) =>
+        fetchApi<{ success: boolean }>(`/admin/reports/${reportId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status }),
         }),
 
     deleteUser: (userId: number) =>

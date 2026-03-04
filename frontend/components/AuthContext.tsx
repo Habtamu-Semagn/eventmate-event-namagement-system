@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, JSX } from 'react';
-import { authApi, setToken, removeToken } from '@/lib/api';
+import { authApi, setToken, removeToken, setUser as setStoredUser, removeUser } from '@/lib/api';
 
 interface User {
     id: number;
@@ -21,9 +21,10 @@ interface AuthContextType {
     userData: UserData | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (name: string, email: string, password: string) => Promise<void>;
+    signUp: (name: string, email: string, password: string, role?: string) => Promise<void>;
     signOut: () => Promise<void>;
     refreshUser: () => Promise<void>;
+    getRedirectUrl: (role: string) => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
                     const response = await authApi.getCurrentUser();
                     const userInfo = response.data.user;
                     setUser(userInfo);
+                    setStoredUser(userInfo);
                     setUserData({
                         displayName: userInfo.name,
                         role: userInfo.role,
@@ -50,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
                 } catch (error) {
                     console.error('Failed to load user:', error);
                     removeToken();
+                    removeUser();
                 }
             }
             setLoading(false);
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
             const response = await authApi.getCurrentUser();
             const userInfo = response.data.user;
             setUser(userInfo);
+            setStoredUser(userInfo);
             setUserData({
                 displayName: userInfo.name,
                 role: userInfo.role,
@@ -73,11 +77,23 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
         }
     };
 
+    const getRedirectUrl = (role: string): string => {
+        switch (role) {
+            case 'Administrator':
+                return '/admin';
+            case 'Organizer':
+                return '/organiser';
+            default:
+                return '/events';
+        }
+    };
+
     const signIn = async (email: string, password: string) => {
         const response = await authApi.login({ email, password });
         const { user: userInfo, token } = response.data;
 
         setToken(token);
+        setStoredUser(userInfo);
         setUser(userInfo);
         setUserData({
             displayName: userInfo.name,
@@ -86,11 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
         });
     };
 
-    const signUp = async (name: string, email: string, password: string) => {
-        const response = await authApi.register({ name, email, password });
+    const signUp = async (name: string, email: string, password: string, role?: string) => {
+        const response = await authApi.register({ name, email, password, role });
         const { user: userInfo, token } = response.data;
 
         setToken(token);
+        setStoredUser(userInfo);
         setUser(userInfo);
         setUserData({
             displayName: userInfo.name,
@@ -101,12 +118,13 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 
     const signOut = async () => {
         removeToken();
+        removeUser();
         setUser(null);
         setUserData(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, userData, loading, signIn, signUp, signOut, refreshUser }}>
+        <AuthContext.Provider value={{ user, userData, loading, signIn, signUp, signOut, refreshUser, getRedirectUrl }}>
             {children}
         </AuthContext.Provider>
     );

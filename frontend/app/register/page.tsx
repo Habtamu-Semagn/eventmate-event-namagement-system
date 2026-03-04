@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthContext';
+import { getUser } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,8 +17,20 @@ export default function RegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [role, setRole] = useState('Registered User');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const getRedirectUrl = (userRole: string): string => {
+        switch (userRole) {
+            case 'Administrator':
+                return '/admin';
+            case 'Organizer':
+                return '/organiser';
+            default:
+                return '/events';
+        }
+    };
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -36,8 +49,15 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            await signUp(displayName, email, password);
-            router.push('/');
+            await signUp(displayName, email, password, role);
+            // Get user from localStorage to determine redirect
+            const user = getUser();
+            if (user) {
+                const redirectUrl = getRedirectUrl(user.role);
+                router.push(redirectUrl);
+            } else {
+                router.push('/');
+            }
         } catch (err: any) {
             setError(err.message || 'Failed to create account');
         } finally {
@@ -107,6 +127,20 @@ export default function RegisterPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="role" className="text-sm font-medium">
+                                I want to
+                            </label>
+                            <select
+                                id="role"
+                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                value={role}
+                                onChange={(e) => setRole(e.target.value)}
+                            >
+                                <option value="Registered User">Attend Events</option>
+                                <option value="Organizer">Organize Events</option>
+                            </select>
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="confirmPassword" className="text-sm font-medium">

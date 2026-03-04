@@ -24,7 +24,9 @@ import {
     ArrowRight,
     CheckCircle,
     Loader2,
-    AlertCircle
+    AlertCircle,
+    Plus,
+    Trash2
 } from "lucide-react"
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -49,9 +51,9 @@ export default function OrganiserCreateEventPage() {
         city: '',
         country: '',
         capacity: '',
+        image_url: '',
         isFree: true,
-        price: '',
-        ticketTypes: [{ name: 'General', price: '', quantity: '' }],
+        ticketCategories: [{ name: 'General Admission', price: '0', capacity: '100' }],
     })
 
     // Redirect if not organizer or admin
@@ -73,24 +75,24 @@ export default function OrganiserCreateEventPage() {
         setFormData({ ...formData, [field]: value })
     }
 
-    const addTicketType = () => {
+    const addTicketCategory = () => {
         setFormData({
             ...formData,
-            ticketTypes: [...formData.ticketTypes, { name: '', price: '', quantity: '' }]
+            ticketCategories: [...formData.ticketCategories, { name: '', price: '', capacity: '' }]
         })
     }
 
-    const removeTicketType = (index: number) => {
+    const removeTicketCategory = (index: number) => {
         setFormData({
             ...formData,
-            ticketTypes: formData.ticketTypes.filter((_, i) => i !== index)
+            ticketCategories: formData.ticketCategories.filter((_, i) => i !== index)
         })
     }
 
-    const updateTicketType = (index: number, field: string, value: string) => {
-        const updated = [...formData.ticketTypes]
+    const updateTicketCategory = (index: number, field: string, value: string) => {
+        const updated = [...formData.ticketCategories]
         updated[index] = { ...updated[index], [field]: value }
-        setFormData({ ...formData, ticketTypes: updated })
+        setFormData({ ...formData, ticketCategories: updated })
     }
 
     const handleSubmit = async () => {
@@ -105,8 +107,16 @@ export default function OrganiserCreateEventPage() {
                 date: formData.date,
                 time: formData.time,
                 location_venue: formData.location,
-                capacity: parseInt(formData.capacity) || 0,
+                city: formData.city,
+                country: formData.country,
+                image_url: formData.image_url,
+                capacity: parseInt(formData.capacity) || (formData.isFree ? 0 : formData.ticketCategories.reduce((sum, cat) => sum + (parseInt(cat.capacity) || 0), 0)),
                 is_paid: !formData.isFree,
+                ticket_categories: formData.isFree ? [] : formData.ticketCategories.map(cat => ({
+                    name: cat.name,
+                    price: parseFloat(cat.price) || 0,
+                    capacity: parseInt(cat.capacity) || 0
+                }))
             }
 
             await eventsApi.create(eventData)
@@ -130,7 +140,9 @@ export default function OrganiserCreateEventPage() {
             case 2:
                 return formData.date && formData.time && formData.location
             case 3:
-                return formData.isFree || formData.ticketTypes.length > 0
+                if (formData.isFree) return true;
+                return formData.ticketCategories.length > 0 &&
+                    formData.ticketCategories.every(cat => cat.name && cat.price && cat.capacity);
             case 4:
                 return true
             default:
@@ -266,12 +278,14 @@ export default function OrganiserCreateEventPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label className={theme === "dark" ? "text-slate-300" : ""}>Cover Image</Label>
-                            <div className={`border-2 border-dashed rounded-lg p-8 text-center ${theme === "dark" ? "border-slate-700" : "border-gray-300"}`}>
-                                <Upload className={`h-10 w-10 mx-auto mb-4 ${theme === "dark" ? "text-slate-500" : "text-gray-400"}`} />
-                                <p className={theme === "dark" ? "text-slate-400" : "text-muted-foreground"}>Click to upload or drag and drop</p>
-                                <p className={`text-sm mt-1 ${theme === "dark" ? "text-slate-500" : "text-muted-foreground"}`}>PNG, JPG up to 10MB</p>
-                            </div>
+                            <Label htmlFor="image_url" className={theme === "dark" ? "text-slate-300" : ""}>Cover Image URL</Label>
+                            <Input
+                                id="image_url"
+                                placeholder="https://example.com/image.jpg"
+                                value={formData.image_url}
+                                onChange={(e) => updateFormData('image_url', e.target.value)}
+                                className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}
+                            />
                         </div>
                     </CardContent>
                 </Card>
@@ -342,7 +356,7 @@ export default function OrganiserCreateEventPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="capacity" className={theme === "dark" ? "text-slate-300" : ""}>Capacity</Label>
+                            <Label htmlFor="capacity" className={theme === "dark" ? "text-slate-300" : ""}>Total Capacity</Label>
                             <Input
                                 id="capacity"
                                 type="number"
@@ -373,6 +387,64 @@ export default function OrganiserCreateEventPage() {
                             />
                             <Label htmlFor="isFree" className={theme === "dark" ? "text-slate-300" : ""}>This is a free event</Label>
                         </div>
+
+                        {!formData.isFree && (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className={`font-semibold ${theme === "dark" ? "text-slate-200" : ""}`}>Ticket Categories</h3>
+                                    <Button type="button" variant="outline" size="sm" onClick={addTicketCategory}>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Category
+                                    </Button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {formData.ticketCategories.map((category, index) => (
+                                        <div key={index} className={`p-4 rounded-lg border ${theme === "dark" ? "border-slate-800 bg-slate-800/50" : "bg-slate-50"} flex flex-col sm:flex-row gap-4 items-end`}>
+                                            <div className="flex-1 space-y-2 w-full">
+                                                <Label className="text-xs">Category Name</Label>
+                                                <Input
+                                                    placeholder="e.g. Early Bird"
+                                                    value={category.name}
+                                                    onChange={(e) => updateTicketCategory(index, 'name', e.target.value)}
+                                                    className={theme === "dark" ? "bg-slate-900" : "bg-white"}
+                                                />
+                                            </div>
+                                            <div className="w-full sm:w-24 space-y-2">
+                                                <Label className="text-xs">Price ($)</Label>
+                                                <Input
+                                                    type="number"
+                                                    placeholder="0.00"
+                                                    value={category.price}
+                                                    onChange={(e) => updateTicketCategory(index, 'price', e.target.value)}
+                                                    className={theme === "dark" ? "bg-slate-900" : "bg-white"}
+                                                />
+                                            </div>
+                                            <div className="w-full sm:w-24 space-y-2">
+                                                <Label className="text-xs">Capacity</Label>
+                                                <Input
+                                                    type="number"
+                                                    placeholder="100"
+                                                    value={category.capacity}
+                                                    onChange={(e) => updateTicketCategory(index, 'capacity', e.target.value)}
+                                                    className={theme === "dark" ? "bg-slate-900" : "bg-white"}
+                                                />
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeTicketCategory(index)}
+                                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                disabled={formData.ticketCategories.length === 1}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {formData.isFree && (
                             <div className={`p-4 rounded-lg ${theme === "dark" ? "bg-slate-800" : "bg-slate-50"}`}>
@@ -410,12 +482,18 @@ export default function OrganiserCreateEventPage() {
                                     <p className={theme === "dark" ? "text-slate-100" : ""}>{formData.location}, {formData.city}, {formData.country}</p>
                                 </div>
                                 <div>
-                                    <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Capacity</p>
-                                    <p className={theme === "dark" ? "text-slate-100" : ""}>{formData.capacity || 'Unlimited'} attendees</p>
+                                    <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Capacity</p>
+                                    <p className={theme === "dark" ? "text-slate-100" : ""}>
+                                        {formData.isFree ? (formData.capacity || 'Unlimited') :
+                                            formData.ticketCategories.reduce((sum, cat) => sum + (parseInt(cat.capacity) || 0), 0)
+                                        } attendees
+                                    </p>
                                 </div>
                                 <div>
                                     <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Pricing</p>
-                                    <p className={theme === "dark" ? "text-slate-100" : ""}>{formData.isFree ? 'Free Event' : 'Paid Event'}</p>
+                                    <p className={theme === "dark" ? "text-slate-100" : ""}>
+                                        {formData.isFree ? 'Free Event' : `${formData.ticketCategories.length} Ticket Categories`}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -466,3 +544,4 @@ export default function OrganiserCreateEventPage() {
         </div>
     )
 }
+

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useTheme } from "@/components/theme-provider"
+import { getUser } from "@/lib/api"
 import {
     Sheet,
     SheetContent,
@@ -305,11 +306,17 @@ export default function OrganiserLayout({
 }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
+    const router = useRouter()
 
-    // Prevent hydration mismatch
+    // Check if user is organizer - redirect if not
     useEffect(() => {
+        const user = getUser();
+        if (!user || user.role !== 'Organizer') {
+            router.push('/');
+            return;
+        }
         setMounted(true)
-    }, [])
+    }, [router])
 
     if (!mounted) {
         return null

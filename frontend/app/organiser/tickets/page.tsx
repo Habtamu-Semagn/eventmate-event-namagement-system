@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,32 +29,43 @@ import {
     MoreHorizontal,
     DollarSign,
     Users,
-    Calendar,
     CheckCircle,
     Clock,
-    XCircle
+    XCircle,
+    Loader2
 } from "lucide-react"
-
-// Mock tickets data
-const mockTickets = [
-    { id: 'TKT-001', event: 'Tech Conference 2026', type: 'VIP', price: 199.99, sold: 45, revenue: 8999.55, status: 'active' },
-    { id: 'TKT-002', event: 'Tech Conference 2026', type: 'General', price: 99.99, sold: 297, revenue: 29700.03, status: 'active' },
-    { id: 'TKT-003', event: 'Music Festival', type: 'VIP', price: 299.99, sold: 120, revenue: 35998.80, status: 'active' },
-    { id: 'TKT-004', event: 'Music Festival', type: 'General', price: 149.99, sold: 636, revenue: 95393.64, status: 'active' },
-    { id: 'TKT-005', event: 'Art Workshop', type: 'Early Bird', price: 49.99, sold: 45, revenue: 2249.55, status: 'soldout' },
-    { id: 'TKT-006', event: 'Art Workshop', type: 'Standard', price: 79.99, sold: 0, revenue: 0, status: 'active' },
-    { id: 'TKT-007', event: 'Business Summit', type: 'VIP', price: 499.99, sold: 0, revenue: 0, status: 'draft' },
-    { id: 'TKT-008', event: 'Business Summit', type: 'General', price: 249.99, sold: 0, revenue: 0, status: 'draft' },
-]
+import { eventsApi } from '@/lib/api'
 
 export default function OrganiserTicketsPage() {
     const { theme } = useTheme()
+    const [tickets, setTickets] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [eventFilter, setEventFilter] = useState('all')
     const [statusFilter, setStatusFilter] = useState('all')
 
-    const filteredTickets = mockTickets.filter(ticket => {
-        const matchesSearch = ticket.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const fetchTickets = async () => {
+        try {
+            setLoading(true)
+            const res = await eventsApi.getOrganizerTickets()
+            if (res.success) {
+                setTickets(res.data.tickets)
+            }
+        } catch (err: any) {
+            console.error('Error fetching tickets:', err)
+            setError('Failed to fetch ticket data')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchTickets()
+    }, [])
+
+    const filteredTickets = tickets.filter(ticket => {
+        const matchesSearch = ticket.id?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
             ticket.type.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesEvent = eventFilter === 'all' || ticket.event === eventFilter;
         const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
@@ -71,13 +82,15 @@ export default function OrganiserTicketsPage() {
     }
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+        // Handle string revenue from SQL aggregate
+        const value = typeof amount === 'string' ? parseFloat(amount) : amount;
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0);
     }
 
-    const uniqueEvents = [...new Set(mockTickets.map(t => t.event))]
-    const activeTickets = mockTickets.filter(t => t.status === 'active').length
-    const totalSold = mockTickets.reduce((sum, t) => sum + t.sold, 0)
-    const totalRevenue = mockTickets.reduce((sum, t) => sum + t.revenue, 0)
+    const uniqueEvents = [...new Set(tickets.map(t => t.event))]
+    const activeTickets = tickets.filter(t => t.status === 'active').length
+    const totalSold = tickets.reduce((sum, t) => sum + parseInt(t.sold || 0), 0)
+    const totalRevenue = tickets.reduce((sum, t) => sum + parseFloat(t.revenue || 0), 0)
 
     return (
         <div className="space-y-6">
@@ -102,7 +115,7 @@ export default function OrganiserTicketsPage() {
                                 <Ticket className="h-6 w-6 text-blue-500" />
                             </div>
                             <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{mockTickets.length}</p>
+                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{tickets.length}</p>
                                 <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Ticket Types</p>
                             </div>
                         </div>
@@ -209,9 +222,22 @@ export default function OrganiserTicketsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredTickets.map((ticket) => (
+                            {loading && tickets.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="text-center py-20">
+                                        <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                                        <p className="mt-2 text-muted-foreground text-sm">Loading tickets...</p>
+                                    </TableCell>
+                                </TableRow>
+                            ) : filteredTickets.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="text-center py-20 text-muted-foreground">
+                                        No ticket types found.
+                                    </TableCell>
+                                </TableRow>
+                            ) : filteredTickets.map((ticket) => (
                                 <TableRow key={ticket.id} className={theme === "dark" ? "border-slate-800" : ""}>
-                                    <TableCell className={`font-mono text-sm ${theme === "dark" ? "text-slate-300" : ""}`}>{ticket.id}</TableCell>
+                                    <TableCell className={`font-mono text-sm ${theme === "dark" ? "text-slate-300" : ""}`}>TKT-{ticket.id}</TableCell>
                                     <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{ticket.event}</TableCell>
                                     <TableCell>
                                         <Badge variant="outline" className={theme === "dark" ? "border-slate-700 text-slate-300" : ""}>{ticket.type}</Badge>

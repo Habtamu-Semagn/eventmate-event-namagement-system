@@ -10,6 +10,7 @@ const userRoutes = require('./routes/users');
 const eventRoutes = require('./routes/events');
 const adminRoutes = require('./routes/admin');
 const notificationRoutes = require('./routes/notifications');
+const publicRoutes = require('./routes/public');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -52,6 +53,7 @@ app.use('/user', userRoutes);
 app.use('/events', eventRoutes);
 app.use('/admin', adminRoutes);
 app.use('/notifications', notificationRoutes);
+app.use('/public', publicRoutes);
 
 // Swagger documentation setup
 let swaggerUi;

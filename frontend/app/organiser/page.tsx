@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,47 +23,28 @@ import {
     TrendingUp,
     Plus,
     Eye,
-    MoreHorizontal,
     Clock,
     CheckCircle2,
-    XCircle,
     CalendarDays,
     BarChart3,
+    Loader2,
+    PlusCircle,
+    Settings,
 } from "lucide-react"
-
-// My Events Data
-const myEvents = [
-    { id: 1, name: "Tech Conference 2026", date: "Mar 15, 2026", attendees: 450, tickets: 500, status: "active", revenue: "$12,500" },
-    { id: 2, name: "Music Festival", date: "Mar 20, 2026", attendees: 1200, tickets: 1500, status: "active", revenue: "$35,000" },
-    { id: 3, name: "Business Workshop", date: "Mar 22, 2026", attendees: 45, tickets: 100, status: "upcoming", revenue: "$4,250" },
-    { id: 4, name: "Art Exhibition", date: "Mar 25, 2026", attendees: 0, tickets: 200, status: "draft", revenue: "$0" },
-]
-
-// Recent Attendees Data
-const recentAttendees = [
-    { id: 1, name: "Alice Johnson", email: "alice@example.com", event: "Tech Conference", ticketType: "VIP", status: "confirmed" },
-    { id: 2, name: "Bob Smith", email: "bob@example.com", event: "Music Festival", ticketType: "General", status: "confirmed" },
-    { id: 3, name: "Carol Williams", email: "carol@example.com", event: "Tech Conference", ticketType: "General", status: "pending" },
-    { id: 4, name: "David Brown", email: "david@example.com", event: "Business Workshop", ticketType: "VIP", status: "confirmed" },
-    { id: 5, name: "Eva Martinez", email: "eva@example.com", event: "Music Festival", ticketType: "General", status: "cancelled" },
-]
-
-// Notifications Data
-const notifications = [
-    { id: 1, title: "New ticket purchase", message: "Alice Johnson purchased a VIP ticket", time: "5 mins ago", type: "success" },
-    { id: 2, title: "Event reminder", message: "Tech Conference starts in 3 days", time: "1 hour ago", type: "info" },
-    { id: 3, title: "Payment received", message: "Payment of $500 received", time: "2 hours ago", type: "success" },
-    { id: 4, title: "Refund request", message: "Bob Smith requested a refund", time: "3 hours ago", type: "warning" },
-    { id: 5, title: "Attendee check-in", message: "50 attendees checked in", time: "5 hours ago", type: "info" },
-]
+import { eventsApi, notificationsApi } from "@/lib/api"
+import Link from "next/link"
 
 // Status Badge Component
 function StatusBadge({ status }: { status: string }) {
+    const s = status ? status.toLowerCase() : 'unknown';
     const styles: Record<string, string> = {
         active: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+        approved: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
         upcoming: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
         draft: "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20",
         confirmed: "bg-green-500/10 text-green-500",
+        rsvped: "bg-green-500/10 text-green-500",
+        purchased: "bg-blue-500/10 text-blue-500",
         pending: "bg-yellow-500/10 text-yellow-500",
         cancelled: "bg-red-500/10 text-red-500",
         success: "bg-green-500/10 text-green-500",
@@ -71,287 +53,268 @@ function StatusBadge({ status }: { status: string }) {
     }
 
     return (
-        <Badge className={styles[status] || styles.info}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+        <Badge className={styles[s] || styles.info}>
+            {status ? (status.charAt(0).toUpperCase() + status.slice(1)) : 'Unknown'}
         </Badge>
     )
 }
 
 // Quick Action Button
-function QuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType, label: string, onClick?: () => void }) {
+function QuickAction({ icon: Icon, label, href }: { icon: React.ElementType, label: string, href: string }) {
     const { theme } = useTheme()
 
     return (
-        <Button variant="outline" className={`h-auto py-4 flex-col gap-2 ${theme === "dark" ? "border-slate-700 hover:bg-slate-800" : ""}`} onClick={onClick}>
-            <Icon className={`h-5 w-5 ${theme === "dark" ? "text-slate-400" : ""}`} />
-            <span className={`text-xs ${theme === "dark" ? "text-slate-400" : ""}`}>{label}</span>
+        <Button asChild variant="outline" className={`h-auto py-4 flex-col gap-2 ${theme === "dark" ? "border-slate-700 hover:bg-slate-800" : ""}`}>
+            <Link href={href}>
+                <Icon className={`h-5 w-5 ${theme === "dark" ? "text-slate-400" : ""}`} />
+                <span className={`text-xs ${theme === "dark" ? "text-slate-400" : ""}`}>{label}</span>
+            </Link>
         </Button>
     )
 }
 
 export default function OrganiserDashboard() {
     const { theme } = useTheme()
+    const [stats, setStats] = useState<any>(null)
+    const [myEvents, setMyEvents] = useState<any[]>([])
+    const [recentAttendees, setRecentAttendees] = useState<any[]>([])
+    const [notifications, setNotifications] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true)
+                const [statsRes, eventsRes, attendeesRes, notifyRes] = await Promise.all([
+                    eventsApi.getOrganizerStats(),
+                    eventsApi.getOrganizerEvents({ limit: 5 }),
+                    eventsApi.getOrganizerRegistrations({ limit: 5 }),
+                    notificationsApi.getMyNotifications()
+                ])
+                setStats(statsRes.data)
+                setMyEvents(eventsRes.data.events)
+                setRecentAttendees(attendeesRes.data.registrations)
+                setNotifications(notifyRes.data.notifications.slice(0, 5))
+            } catch (error) {
+                console.error("Failed to fetch dashboard data:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchDashboardData()
+    }, [])
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    }
 
     return (
         <div className="space-y-6">
-            {/* Page Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className={`text-3xl font-bold tracking-tight ${theme === "dark" ? "text-slate-100" : ""}`}>Dashboard</h1>
-                    <p className={theme === "dark" ? "text-slate-400" : "text-muted-foreground"}>Welcome back! Here's your event overview.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Organizer Dashboard</h1>
+                    <p className="text-muted-foreground">Welcome back! Here's how your events are performing.</p>
                 </div>
-                <Button className={theme === "dark" ? "bg-primary text-primary-foreground" : ""}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Event
-                </Button>
-            </div>
-
-            {/* Stats Grid - 30-60-10 Design */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className={`border-l-4 border-l-red-600 transition-all duration-200 hover:shadow-lg ${theme === "dark" ? "border-slate-800 bg-slate-900" : ""}`}>
-                    <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                            <div className="space-y-2">
-                                <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Events</p>
-                                <p className={`text-3xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>12</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Active: 9</p>
-                            </div>
-                            <div className="p-3 rounded-xl bg-red-500/10">
-                                <Calendar className="h-6 w-6 text-red-600" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className={`border-l-4 border-l-yellow-500 transition-all duration-200 hover:shadow-lg ${theme === "dark" ? "border-slate-800 bg-slate-900" : ""}`}>
-                    <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                            <div className="space-y-2">
-                                <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Pending Approval</p>
-                                <p className={`text-3xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>3</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Awaiting review</p>
-                            </div>
-                            <div className="p-3 rounded-xl bg-yellow-500/10">
-                                <Clock className="h-6 w-6 text-yellow-500" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className={`border-l-4 border-l-blue-500 transition-all duration-200 hover:shadow-lg ${theme === "dark" ? "border-slate-800 bg-slate-900" : ""}`}>
-                    <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                            <div className="space-y-2">
-                                <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Attendees</p>
-                                <p className={`text-3xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>1,695</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Across all events</p>
-                            </div>
-                            <div className="p-3 rounded-xl bg-blue-500/10">
-                                <Users className="h-6 w-6 text-blue-500" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className={`border-l-4 border-l-amber-500 transition-all duration-200 hover:shadow-lg ${theme === "dark" ? "border-slate-800 bg-slate-900" : ""}`}>
-                    <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                            <div className="space-y-2">
-                                <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Revenue</p>
-                                <p className={`text-3xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>$51,750</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Ticket sales</p>
-                            </div>
-                            <div className="p-3 rounded-xl bg-amber-500/10">
-                                <TrendingUp className="h-6 w-6 text-amber-500" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="flex items-center gap-2">
+                    <Button asChild className="bg-[#AC1212] hover:bg-[#8a0f0f]">
+                        <Link href="/organiser/create">
+                            <Plus className="mr-2 h-4 w-4" /> Create Event
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="grid gap-4 md:grid-cols-4">
-                <QuickAction icon={Plus} label="Create Event" />
-                <QuickAction icon={Calendar} label="View Events" />
-                <QuickAction icon={Users} label="Manage Attendees" />
-                <QuickAction icon={BarChart3} label="View Analytics" />
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <QuickAction icon={PlusCircle} label="New Event" href="/organiser/create" />
+                <QuickAction icon={Users} label="View Attendees" href="/organiser/attendees" />
+                <QuickAction icon={BarChart3} label="Analytics" href="#" />
+                <QuickAction icon={Settings} label="Settings" href="/profile" />
             </div>
 
-            {/* Content Tabs */}
-            <Tabs defaultValue="events" className="space-y-4">
-                <TabsList className={theme === "dark" ? "bg-slate-800" : ""}>
-                    <TabsTrigger value="events" className={theme === "dark" ? "data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100" : ""}>My Events</TabsTrigger>
-                    <TabsTrigger value="attendees" className={theme === "dark" ? "data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100" : ""}>Recent Attendees</TabsTrigger>
-                    <TabsTrigger value="notifications" className={theme === "dark" ? "data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100" : ""}>Notifications</TabsTrigger>
-                </TabsList>
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <Loader2 className="h-10 w-10 animate-spin text-[#AC1212]" />
+                    <p className="text-muted-foreground">Loading dashboard data...</p>
+                </div>
+            ) : (
+                <>
+                    {/* Stats Grid */}
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <Card className={theme === "dark" ? "border-slate-800 bg-slate-900/50" : ""}>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                                <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats?.total_events || 0}</div>
+                                <p className="text-xs text-muted-foreground">
+                                    {stats?.active_events || 0} active, {stats?.pending_events || 0} pending
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card className={theme === "dark" ? "border-slate-800 bg-slate-900/50" : ""}>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                                <CardTitle className="text-sm font-medium">Total Attendees</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats?.total_attendees || 0}</div>
+                            </CardContent>
+                        </Card>
+                        <Card className={theme === "dark" ? "border-slate-800 bg-slate-900/50" : ""}>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                                <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{formatCurrency(stats?.total_revenue || 0)}</div>
+                            </CardContent>
+                        </Card>
+                        <Card className={theme === "dark" ? "border-slate-800 bg-slate-900/50" : ""}>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                                <CardTitle className="text-sm font-medium">Approval Rate</CardTitle>
+                                <Ticket className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    {stats?.total_events > 0
+                                        ? Math.round((stats.active_events / stats.total_events) * 100)
+                                        : 0}%
+                                </div>
+                                <p className="text-xs text-muted-foreground">Based on all submissions</p>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                <TabsContent value="events" className="space-y-4">
-                    <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle className={theme === "dark" ? "text-slate-100" : ""}>My Events</CardTitle>
-                                <CardDescription className={theme === "dark" ? "text-slate-400" : ""}>Manage and track your events</CardDescription>
-                            </div>
-                            <Button variant="outline" size="sm" className={theme === "dark" ? "border-slate-700 hover:bg-slate-800 text-slate-200" : ""}>View All Events</Button>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className={theme === "dark" ? "border-slate-800" : ""}>
-                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Event Name</TableHead>
-                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Date</TableHead>
-                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Attendees</TableHead>
-                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Tickets</TableHead>
-                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Revenue</TableHead>
-                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Status</TableHead>
-                                        <TableHead className={`text-right ${theme === "dark" ? "text-slate-400" : ""}`}>Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {myEvents.map((event) => (
-                                        <TableRow key={event.id} className={theme === "dark" ? "border-slate-800" : ""}>
-                                            <TableCell className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{event.name}</TableCell>
-                                            <TableCell>
-                                                <div className={`flex items-center gap-2 ${theme === "dark" ? "text-slate-300" : ""}`}>
-                                                    <CalendarDays className={`h-4 w-4 ${theme === "dark" ? "text-slate-500" : "text-muted-foreground"}`} />
-                                                    {event.date}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{event.attendees}</TableCell>
-                                            <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{event.tickets}</TableCell>
-                                            <TableCell className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{event.revenue}</TableCell>
-                                            <TableCell>
-                                                <StatusBadge status={event.status} />
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`}>
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`}>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                    <div className="grid gap-6 lg:grid-cols-7">
+                        {/* My Events Table */}
+                        <Card className={`lg:col-span-4 ${theme === "dark" ? "border-slate-800 bg-slate-900/50" : ""}`}>
+                            <CardHeader>
+                                <CardTitle>My Events</CardTitle>
+                                <CardDescription>Recent events you've created.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {myEvents.length === 0 ? (
+                                    <div className="text-center py-10">
+                                        <p className="text-muted-foreground">No events found.</p>
+                                        <Button asChild variant="link" className="mt-2">
+                                            <Link href="/organiser/create">Create your first event</Link>
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Event</TableHead>
+                                                <TableHead>Date</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {myEvents.map((event) => (
+                                                <TableRow key={event.id}>
+                                                    <TableCell className="font-medium">{event.title}</TableCell>
+                                                    <TableCell>{new Date(event.date).toLocaleDateString()}</TableCell>
+                                                    <TableCell>
+                                                        <StatusBadge status={event.status} />
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button variant="ghost" size="icon" asChild>
+                                                            <Link href={`/events`}>
+                                                                <Eye className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                )}
+                            </CardContent>
+                        </Card>
 
-                <TabsContent value="attendees" className="space-y-4">
-                    <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle className={theme === "dark" ? "text-slate-100" : ""}>Recent Attendees</CardTitle>
-                                <CardDescription className={theme === "dark" ? "text-slate-400" : ""}>Latest attendee registrations</CardDescription>
-                            </div>
-                            <Button variant="outline" size="sm" className={theme === "dark" ? "border-slate-700 hover:bg-slate-800 text-slate-200" : ""}>View All</Button>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className={theme === "dark" ? "border-slate-800" : ""}>
-                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Attendee</TableHead>
-                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Event</TableHead>
-                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Ticket Type</TableHead>
-                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Status</TableHead>
-                                        <TableHead className={`text-right ${theme === "dark" ? "text-slate-400" : ""}`}>Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {recentAttendees.map((attendee) => (
-                                        <TableRow key={attendee.id} className={theme === "dark" ? "border-slate-800" : ""}>
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className={`h-8 w-8 ${theme === "dark" ? "bg-slate-700" : ""}`}>
-                                                        <AvatarFallback className={theme === "dark" ? "bg-slate-600 text-slate-200" : ""}>{attendee.name.charAt(0)}</AvatarFallback>
+                        {/* Recent Activity Tabs */}
+                        <Card className={`lg:col-span-3 ${theme === "dark" ? "border-slate-800 bg-slate-900/50" : ""}`}>
+                            <Tabs defaultValue="attendees">
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <TabsList>
+                                        <TabsTrigger value="attendees">Attendees</TabsTrigger>
+                                        <TabsTrigger value="notifications">Alerts</TabsTrigger>
+                                    </TabsList>
+                                </CardHeader>
+                                <CardContent>
+                                    <TabsContent value="attendees" className="mt-0 space-y-4">
+                                        {recentAttendees.length === 0 ? (
+                                            <p className="text-center py-10 text-muted-foreground">No recent attendees.</p>
+                                        ) : (
+                                            recentAttendees.map((attendee) => (
+                                                <div key={attendee.id} className="flex items-center gap-4">
+                                                    <Avatar>
+                                                        <AvatarFallback>{attendee.user_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                                                     </Avatar>
-                                                    <div>
-                                                        <p className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{attendee.name}</p>
-                                                        <p className={`text-xs ${theme === "dark" ? "text-slate-500" : "text-muted-foreground"}`}>{attendee.email}</p>
+                                                    <div className="flex-1 space-y-1">
+                                                        <p className="text-sm font-medium leading-none">{attendee.user_name}</p>
+                                                        <p className="text-xs text-muted-foreground line-clamp-1">
+                                                            Registered for {attendee.event_title}
+                                                        </p>
+                                                    </div>
+                                                    <StatusBadge status={attendee.status} />
+                                                </div>
+                                            ))
+                                        )}
+                                    </TabsContent>
+                                    <TabsContent value="notifications" className="mt-0 space-y-4">
+                                        {notifications.length === 0 ? (
+                                            <p className="text-center py-10 text-muted-foreground">No recent notifications.</p>
+                                        ) : (
+                                            notifications.map((notification) => (
+                                                <div key={notification.id} className="flex gap-4">
+                                                    <div className="mt-1">
+                                                        {notification.message.includes('approve') ? (
+                                                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                                        ) : (
+                                                            <Clock className="h-4 w-4 text-blue-500" />
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-sm font-medium leading-none">System Alert</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {notification.message}
+                                                        </p>
+                                                        <p className="text-[10px] text-muted-foreground">
+                                                            {new Date(notification.sent_at).toLocaleTimeString()}
+                                                        </p>
                                                     </div>
                                                 </div>
-                                            </TableCell>
-                                            <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{attendee.event}</TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline" className={theme === "dark" ? "border-slate-700 text-slate-300" : ""}>{attendee.ticketType}</Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <StatusBadge status={attendee.status} />
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`}>
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`}>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="notifications" className="space-y-4">
-                    <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle className={theme === "dark" ? "text-slate-100" : ""}>Notifications</CardTitle>
-                                <CardDescription className={theme === "dark" ? "text-slate-400" : ""}>Stay updated with your events</CardDescription>
-                            </div>
-                            <Button variant="outline" size="sm" className={theme === "dark" ? "border-slate-700 hover:bg-slate-800 text-slate-200" : ""}>Mark All Read</Button>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {notifications.map((notification) => (
-                                    <div
-                                        key={notification.id}
-                                        className={`flex items-start gap-4 p-4 rounded-lg border transition-colors cursor-pointer ${theme === "dark" ? "border-slate-800 hover:bg-slate-800/50" : ""}`}
-                                    >
-                                        <div className={`p-2 rounded-full ${notification.type === 'success' ? 'bg-green-500/10' :
-                                            notification.type === 'warning' ? 'bg-yellow-500/10' :
-                                                'bg-blue-500/10'
-                                            }`}>
-                                            {notification.type === 'success' ? (
-                                                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                            ) : notification.type === 'warning' ? (
-                                                <XCircle className="h-4 w-4 text-yellow-500" />
-                                            ) : (
-                                                <Clock className="h-4 w-4 text-blue-500" />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{notification.title}</p>
-                                            <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>{notification.message}</p>
-                                            <p className={`text-xs ${theme === "dark" ? "text-slate-500" : "text-muted-foreground"} mt-1`}>{notification.time}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
-
-            {/* Quick Actions Banner - Gradient CTA */}
-            <Card className={theme === "dark" ? "bg-gradient-to-r from-red-900 to-slate-900 border-slate-800" : "bg-gradient-to-r from-red-600 to-red-700 border-0"}>
-                <CardContent className="pt-6 pb-6">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                            <h3 className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-white"}`}>Ready to grow your audience?</h3>
-                            <p className={theme === "dark" ? "text-slate-300 mt-1" : "text-white/80 mt-1"}>Create a new event and start selling tickets today.</p>
-                        </div>
-                        <Button className={theme === "dark" ? "bg-white text-slate-900 hover:bg-slate-100 font-semibold" : "bg-white text-red-600 hover:bg-gray-100 font-semibold"}>
-                            <Plus className="h-5 w-5 mr-2" />
-                            Create New Event
-                        </Button>
+                                            ))
+                                        )}
+                                    </TabsContent>
+                                </CardContent>
+                            </Tabs>
+                        </Card>
                     </div>
-                </CardContent>
-            </Card>
+
+                    {/* Quick Actions Banner - Gradient CTA */}
+                    <Card className={theme === "dark" ? "bg-gradient-to-r from-red-900 to-slate-900 border-slate-800" : "bg-gradient-to-r from-red-600 to-red-700 border-0"}>
+                        <CardContent className="pt-6 pb-6">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">Ready to grow your audience?</h3>
+                                    <p className="text-white/80 mt-1">Create a new event and start selling tickets today.</p>
+                                </div>
+                                <Button asChild className="bg-white text-red-600 hover:bg-gray-100 font-semibold">
+                                    <Link href="/organiser/create">
+                                        <Plus className="h-5 w-5 mr-2" />
+                                        Create New Event
+                                    </Link>
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </>
+            )}
         </div>
     )
 }

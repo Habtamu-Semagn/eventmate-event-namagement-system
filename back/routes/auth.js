@@ -14,7 +14,7 @@ const router = express.Router();
  */
 router.post('/register', userValidation.register, async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, role } = req.body;
 
         // Check if email already exists (BR-01)
         const existingUser = await db.query(
@@ -33,12 +33,16 @@ router.post('/register', userValidation.register, async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
-        // Insert new user with default role
+        // Validate role - only allow specific roles for registration
+        const allowedRoles = ['Registered User', 'Organizer'];
+        const userRole = allowedRoles.includes(role) ? role : 'Registered User';
+
+        // Insert new user with role
         const result = await db.query(
             `INSERT INTO users (name, email, password_hash, role) 
              VALUES ($1, $2, $3, $4) 
              RETURNING id, name, email, role, created_at`,
-            [name, email, passwordHash, 'Registered User']
+            [name, email, passwordHash, userRole]
         );
 
         const user = result.rows[0];

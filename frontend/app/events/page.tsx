@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -9,17 +10,38 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Calendar, MapPin, Users, Search, Heart, Loader2 } from 'lucide-react';
 import { eventsApi, registrationsApi, Event } from '@/lib/api';
 import { useAuth } from '@/components/AuthContext';
+import { useSearchParams } from 'next/navigation';
+import { useToast } from '@/components/ui/use-toast';
 
 const categories = ['All', 'Technology', 'Music', 'Art', 'Business', 'Food', 'Sports'];
 
-export default function EventsPage() {
+function EventsList() {
     const { user } = useAuth();
-    const [searchQuery, setSearchQuery] = useState('');
+    const router = useRouter();
+    const { toast } = useToast();
+    const searchParams = useSearchParams();
+    const initialSearch = searchParams.get('search') || '';
+    const [searchQuery, setSearchQuery] = useState(initialSearch);
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [registeringEventId, setRegisteringEventId] = useState<number | null>(null);
+
+    // Redirect to login when user logs out
+    useEffect(() => {
+        if (!user) {
+            router.push('/login');
+        }
+    }, [user, router]);
+
+    // Update search query when URL param changes
+    useEffect(() => {
+        const query = searchParams.get('search');
+        if (query !== null) {
+            setSearchQuery(query);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         const fetchEvents = async () => {
@@ -55,9 +77,17 @@ export default function EventsPage() {
         try {
             setRegisteringEventId(eventId);
             await registrationsApi.register(eventId);
-            alert('Successfully registered for the event!');
+            toast({
+                title: "Registration Successful",
+                description: "You have successfully registered for the event!",
+                variant: "success",
+            });
         } catch (err: any) {
-            alert(err.message || 'Failed to register for event');
+            toast({
+                title: "Registration Failed",
+                description: err.message || "Failed to register for event",
+                variant: "destructive",
+            });
         } finally {
             setRegisteringEventId(null);
         }
@@ -185,5 +215,21 @@ export default function EventsPage() {
             </main>
             <Footer />
         </div>
+    );
+}
+
+export default function EventsPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-screen flex-col">
+                <Navbar />
+                <main className="flex-1 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#AC1212]" />
+                </main>
+                <Footer />
+            </div>
+        }>
+            <EventsList />
+        </Suspense>
     );
 }

@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthContext';
+import { getUser } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,17 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const getRedirectUrl = (role: string): string => {
+        switch (role) {
+            case 'Administrator':
+                return '/admin';
+            case 'Organizer':
+                return '/organiser';
+            default:
+                return '/events';
+        }
+    };
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setError('');
@@ -24,7 +36,14 @@ export default function LoginPage() {
 
         try {
             await signIn(email, password);
-            router.push('/');
+            // Get user from localStorage to determine redirect
+            const user = getUser();
+            if (user) {
+                const redirectUrl = getRedirectUrl(user.role);
+                router.push(redirectUrl);
+            } else {
+                router.push('/');
+            }
         } catch (err: any) {
             setError(err.message || 'Invalid email or password');
         } finally {

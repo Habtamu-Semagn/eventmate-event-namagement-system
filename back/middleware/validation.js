@@ -108,6 +108,33 @@ const eventValidation = {
             .optional()
             .isBoolean()
             .withMessage('is_paid must be a boolean value'),
+        body('image_url')
+            .optional()
+            .trim()
+            .isURL()
+            .withMessage('image_url must be a valid URL'),
+        body('city')
+            .optional()
+            .trim()
+            .isLength({ max: 100 })
+            .withMessage('City cannot exceed 100 characters'),
+        body('country')
+            .optional()
+            .trim()
+            .isLength({ max: 100 })
+            .withMessage('Country cannot exceed 100 characters'),
+        body('ticket_categories')
+            .optional()
+            .isArray()
+            .withMessage('ticket_categories must be an array'),
+        body('ticket_categories.*.name')
+            .if(body('ticket_categories').exists())
+            .notEmpty()
+            .withMessage('Ticket category name is required'),
+        body('ticket_categories.*.price')
+            .if(body('ticket_categories').exists())
+            .isFloat({ min: 0 })
+            .withMessage('Ticket price must be a positive number'),
         validate
     ],
     update: [
@@ -155,6 +182,21 @@ const eventValidation = {
             .optional()
             .isBoolean()
             .withMessage('is_paid must be a boolean value'),
+        body('image_url')
+            .optional()
+            .trim()
+            .isURL()
+            .withMessage('image_url must be a valid URL'),
+        body('city')
+            .optional()
+            .trim()
+            .isLength({ max: 100 })
+            .withMessage('City cannot exceed 100 characters'),
+        body('country')
+            .optional()
+            .trim()
+            .isLength({ max: 100 })
+            .withMessage('Country cannot exceed 100 characters'),
         validate
     ],
     idParam: [
