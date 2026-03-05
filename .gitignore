@@ -1,5 +1,6 @@
 # Dependencies - ignore node_modules in all directories
 **/node_modules/
+**/node_modules/*
 
 # Build outputs
 */.next/
