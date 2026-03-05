@@ -27,9 +27,9 @@ import {
     CheckCircle2,
     CalendarDays,
     BarChart3,
+    Bell,
     Loader2,
     PlusCircle,
-    Settings,
 } from "lucide-react"
 import { eventsApi, notificationsApi } from "@/lib/api"
 import Link from "next/link"
@@ -128,8 +128,8 @@ export default function OrganiserDashboard() {
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <QuickAction icon={PlusCircle} label="New Event" href="/organiser/create" />
                 <QuickAction icon={Users} label="View Attendees" href="/organiser/attendees" />
-                <QuickAction icon={BarChart3} label="Analytics" href="#" />
-                <QuickAction icon={Settings} label="Settings" href="/profile" />
+                <QuickAction icon={Ticket} label="View Tickets" href="/organiser/tickets" />
+                <QuickAction icon={Bell} label="Notifications" href="/organiser/notifications" />
             </div>
 
             {loading ? (

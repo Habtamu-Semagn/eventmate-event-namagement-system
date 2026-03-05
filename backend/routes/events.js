@@ -87,6 +87,355 @@ router.get('/', optionalAuth, eventValidation.list, async (req, res) => {
 });
 
 /**
+ * GET /events/organizer/my-events
+ * Get all events created by the authenticated organizer
+ * Query params: status, page, limit
+ */
+router.get('/organizer/my-events', authenticate, isOrganizer, async (req, res) => {
+    try {
+        const { status, page = 1, limit = 20 } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        // Build query based on whether status filter is provided
+        let query, countQuery, values;
+
+        if (status) {
+            countQuery = 'SELECT COUNT(*) FROM events e WHERE e.organizer_id = $1 AND e.status = $2';
+            query = `SELECT e.*, 
+                (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id) as registration_count,
+                (SELECT COUNT(*) FROM tickets t 
+                 JOIN registrations r ON t.registration_id = r.id 
+                 WHERE r.event_id = e.id) as ticket_count
+                FROM events e
+                WHERE e.organizer_id = $1 AND e.status = $2
+                ORDER BY e.created_at DESC
+                LIMIT $3 OFFSET $4`;
+            values = [req.user.id, status, limit, offset];
+        } else {
+            countQuery = 'SELECT COUNT(*) FROM events e WHERE e.organizer_id = $1';
+            query = `SELECT e.*, 
+                (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id) as registration_count,
+                (SELECT COUNT(*) FROM tickets t 
+                 JOIN registrations r ON t.registration_id = r.id 
+                 WHERE r.event_id = e.id) as ticket_count
+                FROM events e
+                WHERE e.organizer_id = $1
+                ORDER BY e.created_at DESC
+                LIMIT $2 OFFSET $3`;
+            values = [req.user.id, limit, offset];
+        }
+
+        // Get total count
+        const countValues = status ? [req.user.id, status] : [req.user.id];
+        const countResult = await db.query(countQuery, countValues);
+        const total = parseInt(countResult.rows[0].count);
+
+        // Get paginated events
+        const result = await db.query(query, values);
+
+        res.json({
+            success: true,
+            data: {
+                events: result.rows,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    totalPages: Math.ceil(total / limit)
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Get organizer events error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting organizer events'
+        });
+    }
+});
+
+/**
+ * GET /events/organizer/registrations
+ * Get all registrations for the authenticated organizer's events
+ * Query params: event_id, status, page, limit
+ */
+router.get('/organizer/registrations', authenticate, isOrganizer, async (req, res) => {
+    try {
+        const { event_id, status, page = 1, limit = 20 } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        // First get all event IDs belonging to this organizer
+        const eventIdsResult = await db.query(
+            'SELECT id FROM events WHERE organizer_id = $1',
+            [req.user.id]
+        );
+
+        if (eventIdsResult.rows.length === 0) {
+            return res.json({
+                success: true,
+                data: {
+                    registrations: [],
+                    pagination: {
+                        page: parseInt(page),
+                        limit: parseInt(limit),
+                        total: 0,
+                        totalPages: 0
+                    }
+                }
+            });
+        }
+
+        const eventIds = eventIdsResult.rows.map(row => row.id);
+
+        // Build queries based on filters
+        let countQuery, dataQuery, values, countValues;
+        const baseWhere = 'r.event_id = ANY($1)';
+
+        if (event_id && status) {
+            countQuery = `SELECT COUNT(*) FROM registrations r WHERE ${baseWhere} AND r.event_id = $2 AND r.status = $3`;
+            dataQuery = `SELECT r.*, e.title as event_title, e.date as event_date, e.time as event_time,
+                    u.name as user_name, u.email as user_email
+             FROM registrations r
+             JOIN events e ON r.event_id = e.id
+             JOIN users u ON r.user_id = u.id
+             WHERE ${baseWhere} AND r.event_id = $2 AND r.status = $3
+             ORDER BY r.timestamp DESC
+             LIMIT $4 OFFSET $5`;
+            values = [eventIds, parseInt(event_id), status, limit, offset];
+            countValues = [eventIds, parseInt(event_id), status];
+        } else if (event_id) {
+            countQuery = `SELECT COUNT(*) FROM registrations r WHERE ${baseWhere} AND r.event_id = $2`;
+            dataQuery = `SELECT r.*, e.title as event_title, e.date as event_date, e.time as event_time,
+                    u.name as user_name, u.email as user_email
+             FROM registrations r
+             JOIN events e ON r.event_id = e.id
+             JOIN users u ON r.user_id = u.id
+             WHERE ${baseWhere} AND r.event_id = $2
+             ORDER BY r.timestamp DESC
+             LIMIT $3 OFFSET $4`;
+            values = [eventIds, parseInt(event_id), limit, offset];
+            countValues = [eventIds, parseInt(event_id)];
+        } else if (status) {
+            countQuery = `SELECT COUNT(*) FROM registrations r WHERE ${baseWhere} AND r.status = $2`;
+            dataQuery = `SELECT r.*, e.title as event_title, e.date as event_date, e.time as event_time,
+                    u.name as user_name, u.email as user_email
+             FROM registrations r
+             JOIN events e ON r.event_id = e.id
+             JOIN users u ON r.user_id = u.id
+             WHERE ${baseWhere} AND r.status = $2
+             ORDER BY r.timestamp DESC
+             LIMIT $3 OFFSET $4`;
+            values = [eventIds, status, limit, offset];
+            countValues = [eventIds, status];
+        } else {
+            countQuery = `SELECT COUNT(*) FROM registrations r WHERE ${baseWhere}`;
+            dataQuery = `SELECT r.*, e.title as event_title, e.date as event_date, e.time as event_time,
+                    u.name as user_name, u.email as user_email
+             FROM registrations r
+             JOIN events e ON r.event_id = e.id
+             JOIN users u ON r.user_id = u.id
+             WHERE ${baseWhere}
+             ORDER BY r.timestamp DESC
+             LIMIT $2 OFFSET $3`;
+            values = [eventIds, limit, offset];
+            countValues = [eventIds];
+        }
+
+        // Get total count
+        const countResult = await db.query(countQuery, countValues);
+        const total = parseInt(countResult.rows[0].count);
+
+        // Get paginated registrations
+        const result = await db.query(dataQuery, values);
+
+        res.json({
+            success: true,
+            data: {
+                registrations: result.rows,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    totalPages: Math.ceil(total / limit)
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Get organizer registrations error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting organizer registrations'
+        });
+    }
+});
+
+/**
+ * GET /events/organizer/stats
+ * Get statistics for the authenticated organizer's events
+ */
+router.get('/organizer/stats', authenticate, isOrganizer, async (req, res) => {
+    try {
+        // Get total events
+        const totalEventsResult = await db.query(
+            'SELECT COUNT(*) FROM events WHERE organizer_id = $1',
+            [req.user.id]
+        );
+
+        // Get events by status
+        const eventsByStatusResult = await db.query(
+            `SELECT status, COUNT(*) as count 
+             FROM events 
+             WHERE organizer_id = $1 
+             GROUP BY status`,
+            [req.user.id]
+        );
+
+        // Get total registrations
+        const totalRegistrationsResult = await db.query(
+            `SELECT COUNT(*) 
+             FROM registrations r
+             JOIN events e ON r.event_id = e.id
+             WHERE e.organizer_id = $1`,
+            [req.user.id]
+        );
+
+        // Get total tickets sold
+        const totalTicketsResult = await db.query(
+            `SELECT COUNT(*) 
+             FROM tickets t
+             JOIN registrations r ON t.registration_id = r.id
+             JOIN events e ON r.event_id = e.id
+             WHERE e.organizer_id = $1`,
+            [req.user.id]
+        );
+
+        // Get upcoming events count
+        const upcomingEventsResult = await db.query(
+            `SELECT COUNT(*) 
+             FROM events 
+             WHERE organizer_id = $1 AND date >= CURRENT_DATE`,
+            [req.user.id]
+        );
+
+        // Get total revenue from tickets
+        const revenueResult = await db.query(
+            `SELECT COALESCE(SUM(t.price), 0) as total_revenue
+             FROM tickets t
+             JOIN registrations r ON t.registration_id = r.id
+             JOIN events e ON r.event_id = e.id
+             WHERE e.organizer_id = $1`,
+            [req.user.id]
+        );
+
+        // Build status counts
+        const statusCounts = {
+            Pending: 0,
+            Approved: 0,
+            Rejected: 0
+        };
+        eventsByStatusResult.rows.forEach(row => {
+            statusCounts[row.status] = parseInt(row.count);
+        });
+
+        res.json({
+            success: true,
+            data: {
+                total_events: parseInt(totalEventsResult.rows[0].count),
+                total_attendees: parseInt(totalRegistrationsResult.rows[0].count),
+                total_revenue: parseFloat(revenueResult.rows[0].total_revenue) || 0,
+                active_events: statusCounts.Approved || 0,
+                upcoming_events: parseInt(upcomingEventsResult.rows[0].count),
+                events_by_status: statusCounts
+            }
+        });
+    } catch (error) {
+        console.error('Get organizer stats error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting organizer stats'
+        });
+    }
+});
+
+/**
+ * GET /events/organizer/tickets
+ * Get all tickets for the authenticated organizer's events
+ */
+router.get('/organizer/tickets', authenticate, isOrganizer, async (req, res) => {
+    try {
+        const { page = 1, limit = 20 } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        // Get all event IDs belonging to this organizer
+        const eventIdsResult = await db.query(
+            'SELECT id FROM events WHERE organizer_id = $1',
+            [req.user.id]
+        );
+
+        if (eventIdsResult.rows.length === 0) {
+            return res.json({
+                success: true,
+                data: {
+                    tickets: [],
+                    pagination: {
+                        page: parseInt(page),
+                        limit: parseInt(limit),
+                        total: 0,
+                        totalPages: 0
+                    }
+                }
+            });
+        }
+
+        const eventIds = eventIdsResult.rows.map(row => row.id);
+
+        // Get total count
+        const countResult = await db.query(
+            `SELECT COUNT(*) 
+             FROM tickets t
+             JOIN registrations r ON t.registration_id = r.id
+             WHERE r.event_id = ANY($1)`,
+            [eventIds]
+        );
+
+        const total = parseInt(countResult.rows[0].count);
+
+        // Get paginated tickets
+        const result = await db.query(
+            `SELECT t.*, e.title as event_title, e.date as event_date, e.time as event_time,
+                    u.name as user_name, u.email as user_email
+             FROM tickets t
+             JOIN registrations r ON t.registration_id = r.id
+             JOIN events e ON r.event_id = e.id
+             JOIN users u ON r.user_id = u.id
+             WHERE r.event_id = ANY($1)
+             ORDER BY t.created_at DESC
+             LIMIT $2 OFFSET $3`,
+            [eventIds, limit, offset]
+        );
+
+        res.json({
+            success: true,
+            data: {
+                tickets: result.rows,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    totalPages: Math.ceil(total / limit)
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Get organizer tickets error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting organizer tickets'
+        });
+    }
+});
+
+/**
  * GET /events/:id
  * View detailed event information
  */
