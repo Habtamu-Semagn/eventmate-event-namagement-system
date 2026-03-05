@@ -108,7 +108,7 @@ router.get('/organizer/my-events', authenticate, isOrganizer, async (req, res) =
                  WHERE r.event_id = e.id) as ticket_count
                 FROM events e
                 WHERE e.organizer_id = $1 AND e.status = $2
-                ORDER BY e.created_at DESC
+                ORDER BY e.date DESC, e.time DESC
                 LIMIT $3 OFFSET $4`;
             values = [req.user.id, status, limit, offset];
         } else {
@@ -120,7 +120,7 @@ router.get('/organizer/my-events', authenticate, isOrganizer, async (req, res) =
                  WHERE r.event_id = e.id) as ticket_count
                 FROM events e
                 WHERE e.organizer_id = $1
-                ORDER BY e.created_at DESC
+                ORDER BY e.date DESC, e.time DESC
                 LIMIT $2 OFFSET $3`;
             values = [req.user.id, limit, offset];
         }
@@ -568,10 +568,74 @@ router.post('/', authenticate, isOrganizer, eventValidation.create, async (req, 
 });
 
 /**
+ * PUT /events/registrations/:id/status
+ * Update registration status (Organizer Only)
+ */
+router.put('/registrations/:id/status', authenticate, isOrganizer, async (req, res) => {
+    try {
+        console.log('PUT /registrations/:id/status called', { id: req.params.id, body: req.body });
+        const { id } = req.params;
+        const { status } = req.body;
+
+        // Validate status
+        const validStatuses = ['Confirmed', 'Pending', 'Cancelled', 'Checked-In', 'RSVPed', 'Purchased'];
+        if (!status || !validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+            });
+        }
+
+        // Check if registration exists and belongs to organizer's event
+        const regCheck = await db.query(
+            `SELECT r.*, e.organizer_id 
+             FROM registrations r 
+             JOIN events e ON r.event_id = e.id 
+             WHERE r.id = $1`,
+            [id]
+        );
+
+        if (regCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Registration not found'
+            });
+        }
+
+        const registration = regCheck.rows[0];
+
+        // Check if organizer owns the event
+        if (registration.organizer_id !== req.user.id && req.user.role !== 'Administrator') {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only manage registrations for your own events'
+            });
+        }
+
+        // Update the registration status
+        await db.query(
+            'UPDATE registrations SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [status, id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Registration status updated successfully'
+        });
+    } catch (error) {
+        console.error('Update registration status error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Error updating registration status'
+        });
+    }
+});
+
+/**
  * PUT /events/:id
  * Edit existing event details (Organizers Only) - BR-04
  */
-router.put('/:id', authenticate, isOrganizer, eventValidation.update, async (req, res) => {
+router.put('/:id', authenticate, isOrganizer, async (req, res) => {
     try {
         const { id } = req.params;
 

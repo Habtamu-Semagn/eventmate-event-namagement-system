@@ -140,6 +140,34 @@ const initializeDatabase = async () => {
         );
 
         console.log('Admin user ready: admin@eventmate.com / admin123');
+
+        // Migration: Add missing columns to registrations table
+        console.log('Running migrations for registrations table...');
+        try {
+            await pool.query(
+                `ALTER TABLE registrations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
+            );
+            console.log('  ✓ Added updated_at column');
+        } catch (err) {
+            console.log('  ✗ updated_at column: ' + err.message.substring(0, 50));
+        }
+        try {
+            await pool.query(
+                `ALTER TABLE registrations ADD COLUMN IF NOT EXISTS paid_amount DECIMAL(10, 2) DEFAULT 0.00`
+            );
+            console.log('  ✓ Added paid_amount column');
+        } catch (err) {
+            console.log('  ✗ paid_amount column: ' + err.message.substring(0, 50));
+        }
+        try {
+            await pool.query(
+                `ALTER TABLE registrations ADD COLUMN IF NOT EXISTS ticket_type VARCHAR(100)`
+            );
+            console.log('  ✓ Added ticket_type column');
+        } catch (err) {
+            console.log('  ✗ ticket_type column: ' + err.message.substring(0, 50));
+        }
+
         console.log('\nDatabase initialization complete!');
 
     } catch (error) {

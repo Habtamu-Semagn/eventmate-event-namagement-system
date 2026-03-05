@@ -7,6 +7,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useTheme } from "@/components/theme-provider"
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
     Table,
     TableBody,
     TableCell,
@@ -36,20 +48,33 @@ import {
     Ticket,
     DollarSign,
     Loader2,
-    AlertCircle
+    AlertCircle,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react"
 import { useAuth } from '@/components/AuthContext'
 import { eventsApi } from '@/lib/api'
+import { useToast } from '@/components/ui/use-toast'
 
 export default function OrganiserEventsPage() {
     const { theme } = useTheme()
     const { user, userData } = useAuth()
     const router = useRouter()
+    const { toast } = useToast()
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
     const [events, setEvents] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalEventsCount, setTotalEventsCount] = useState(0)
+    const ITEMS_PER_PAGE = 10
+    const [selectedEvent, setSelectedEvent] = useState<any>(null)
+    const [detailsOpen, setDetailsOpen] = useState(false)
+    const [editOpen, setEditOpen] = useState(false)
+    const [ticketsOpen, setTicketsOpen] = useState(false)
+    const [editFormData, setEditFormData] = useState<any>({})
 
     // Redirect if not organizer or admin
     useEffect(() => {
@@ -69,8 +94,14 @@ export default function OrganiserEventsPage() {
 
             try {
                 setLoading(true)
-                const response = await eventsApi.getOrganizerEvents()
-                setEvents(response.data.events || [])
+                // Fetch events and stats in parallel
+                const [eventsResponse, statsResponse] = await Promise.all([
+                    eventsApi.getOrganizerEvents({ page: currentPage, limit: ITEMS_PER_PAGE }),
+                    eventsApi.getOrganizerStats()
+                ])
+                setEvents(eventsResponse.data.events || [])
+                setTotalPages(eventsResponse.data.pagination?.totalPages || 1)
+                setTotalEventsCount(statsResponse.data.total_events || 0)
             } catch (err: any) {
                 console.error('Failed to fetch organizer events:', err)
                 setError('Failed to load your events')
@@ -80,7 +111,7 @@ export default function OrganiserEventsPage() {
         }
 
         fetchOrganizerEvents()
-    }, [user, userData])
+    }, [user, userData, currentPage])
 
     const filteredEvents = events.filter(event => {
         const matchesSearch = event.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -154,8 +185,8 @@ export default function OrganiserEventsPage() {
                                 <Calendar className="h-6 w-6 text-green-500" />
                             </div>
                             <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{activeCount}</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Active Events</p>
+                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{totalEventsCount}</p>
+                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Events</p>
                             </div>
                         </div>
                     </CardContent>
@@ -258,7 +289,6 @@ export default function OrganiserEventsPage() {
                                 <TableRow className={theme === "dark" ? "border-slate-800" : ""}>
                                     <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Event</TableHead>
                                     <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Category</TableHead>
-                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Date</TableHead>
                                     <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Location</TableHead>
                                     <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Attendees</TableHead>
                                     <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Status</TableHead>
@@ -272,7 +302,6 @@ export default function OrganiserEventsPage() {
                                         <TableCell>
                                             <Badge variant="outline" className={theme === "dark" ? "border-slate-700 text-slate-300" : ""}>{event.category}</Badge>
                                         </TableCell>
-                                        <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{event.date}</TableCell>
                                         <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{event.location_venue || 'TBD'}</TableCell>
                                         <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{event.registration_count || 0}/{event.capacity || '∞'}</TableCell>
                                         <TableCell>
@@ -282,24 +311,263 @@ export default function OrganiserEventsPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                                <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`}>
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`}>
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`}>
-                                                    <Ticket className="h-4 w-4" />
-                                                </Button>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`} onClick={() => { setSelectedEvent(event); setDetailsOpen(true); }}>
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>View Details</TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`} onClick={() => {
+                                                            // Format date and time for input fields
+                                                            const eventCopy = { ...event };
+                                                            if (eventCopy.date) {
+                                                                eventCopy.date = eventCopy.date.split('T')[0];
+                                                            }
+                                                            if (eventCopy.time) {
+                                                                // Ensure time is in HH:MM format for input
+                                                                eventCopy.time = eventCopy.time.substring(0, 5);
+                                                            }
+                                                            setSelectedEvent(event);
+                                                            setEditFormData(eventCopy);
+                                                            setEditOpen(true);
+                                                        }}>
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Edit Event</TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`} onClick={() => { setSelectedEvent(event); setTicketsOpen(true); }}>
+                                                            <Ticket className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>View Tickets</TooltipContent>
+                                                </Tooltip>
                                             </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-between mt-4">
+                                <div className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>
+                                    Page {currentPage} of {totalPages}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                        className={theme === "dark" ? "border-slate-700" : ""}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className={theme === "dark" ? "border-slate-700" : ""}
+                                    >
+                                        Next
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             )}
+
+            {/* Event Details Dialog */}
+            <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+                <DialogContent className={theme === "dark" ? "bg-slate-900 border-slate-700" : ""}>
+                    <DialogHeader>
+                        <DialogTitle className={theme === "dark" ? "text-slate-100" : ""}>
+                            {selectedEvent?.title}
+                        </DialogTitle>
+                        <DialogDescription className={theme === "dark" ? "text-slate-400" : ""}>
+                            Event Details
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedEvent && (
+                        <div className="space-y-4 mt-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Date</p>
+                                    <p className={theme === "dark" ? "text-slate-100" : ""}>{selectedEvent.date}</p>
+                                </div>
+                                <div>
+                                    <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Time</p>
+                                    <p className={theme === "dark" ? "text-slate-100" : ""}>{selectedEvent.time || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Location</p>
+                                    <p className={theme === "dark" ? "text-slate-100" : ""}>{selectedEvent.location_venue || 'TBD'}</p>
+                                </div>
+                                <div>
+                                    <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Category</p>
+                                    <Badge variant="outline" className={theme === "dark" ? "border-slate-700 text-slate-300" : ""}>
+                                        {selectedEvent.category}
+                                    </Badge>
+                                </div>
+                                <div>
+                                    <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Capacity</p>
+                                    <p className={theme === "dark" ? "text-slate-100" : ""}>{selectedEvent.capacity || 'Unlimited'}</p>
+                                </div>
+                                <div>
+                                    <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Status</p>
+                                    <Badge className={`${getStatusBadge(selectedEvent.status)} border capitalize`}>
+                                        {selectedEvent.status}
+                                    </Badge>
+                                </div>
+                            </div>
+                            {selectedEvent.description && (
+                                <div>
+                                    <p className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Description</p>
+                                    <p className={`mt-1 ${theme === "dark" ? "text-slate-100" : ""}`}>{selectedEvent.description}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Event Dialog */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent className={theme === "dark" ? "bg-slate-900 border-slate-700" : ""}>
+                    <DialogHeader>
+                        <DialogTitle className={theme === "dark" ? "text-slate-100" : ""}>
+                            Edit Event
+                        </DialogTitle>
+                        <DialogDescription className={theme === "dark" ? "text-slate-400" : ""}>
+                            Update event details for {selectedEvent?.title}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedEvent && (
+                        <div className="space-y-4 mt-4">
+                            <div>
+                                <label className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Title</label>
+                                <Input
+                                    value={editFormData.title || ''}
+                                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                                    className={`mt-1 ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Date</label>
+                                    <Input
+                                        type="date"
+                                        value={editFormData.date || ''}
+                                        onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
+                                        className={`mt-1 ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Time</label>
+                                    <Input
+                                        type="time"
+                                        value={editFormData.time || ''}
+                                        onChange={(e) => setEditFormData({ ...editFormData, time: e.target.value })}
+                                        className={`mt-1 ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Location</label>
+                                <Input
+                                    value={editFormData.location_venue || ''}
+                                    onChange={(e) => setEditFormData({ ...editFormData, location_venue: e.target.value })}
+                                    className={`mt-1 ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                />
+                            </div>
+                            <div>
+                                <label className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Category</label>
+                                <Input
+                                    value={editFormData.category || ''}
+                                    onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                                    className={`mt-1 ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                />
+                            </div>
+                            <div>
+                                <label className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Description</label>
+                                <Input
+                                    value={editFormData.description || ''}
+                                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                    className={`mt-1 ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                />
+                            </div>
+                            <div className="flex justify-end gap-2 mt-4">
+                                <Button variant="outline" onClick={() => setEditOpen(false)} className={theme === "dark" ? "border-slate-700" : ""}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    className="bg-[#AC1212] hover:bg-[#8a0f0f]"
+                                    onClick={async () => {
+                                        try {
+                                            await eventsApi.updateEvent(selectedEvent.id, editFormData)
+                                            toast({ title: "Success", description: "Event updated successfully" })
+                                            setEditOpen(false)
+                                            // Refresh events list
+                                            const response = await eventsApi.getOrganizerEvents({ page: currentPage, limit: ITEMS_PER_PAGE })
+                                            setEvents(response.data.events || [])
+                                        } catch (err: any) {
+                                            toast({ title: "Error", description: err.message || "Failed to update event", variant: "destructive" })
+                                        }
+                                    }}
+                                >
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* View Tickets Dialog */}
+            <Dialog open={ticketsOpen} onOpenChange={setTicketsOpen}>
+                <DialogContent className={theme === "dark" ? "bg-slate-900 border-slate-700" : ""}>
+                    <DialogHeader>
+                        <DialogTitle className={theme === "dark" ? "text-slate-100" : ""}>
+                            Event Tickets
+                        </DialogTitle>
+                        <DialogDescription className={theme === "dark" ? "text-slate-400" : ""}>
+                            View tickets for {selectedEvent?.title}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedEvent && (
+                        <div className="mt-4">
+                            <div className={`p-4 rounded-lg ${theme === "dark" ? "bg-slate-800" : "bg-gray-100"}`}>
+                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>
+                                    Total Tickets Sold: <span className={theme === "dark" ? "text-slate-100" : ""}>{selectedEvent.ticket_count || 0}</span>
+                                </p>
+                                <p className={`text-sm mt-2 ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>
+                                    Capacity: <span className={theme === "dark" ? "text-slate-100" : ""}>{selectedEvent.capacity || 'Unlimited'}</span>
+                                </p>
+                                <p className={`text-sm mt-2 ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>
+                                    Registrations: <span className={theme === "dark" ? "text-slate-100" : ""}>{selectedEvent.registration_count || 0}</span>
+                                </p>
+                            </div>
+                            <div className="flex justify-end mt-4">
+                                <Button variant="outline" onClick={() => setTicketsOpen(false)} className={theme === "dark" ? "border-slate-700" : ""}>
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

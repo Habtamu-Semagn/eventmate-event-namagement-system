@@ -48,8 +48,11 @@ CREATE TABLE IF NOT EXISTS registrations (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
-    status VARCHAR(50) DEFAULT 'RSVPed' CHECK (status IN ('RSVPed', 'Purchased')),
+    status VARCHAR(50) DEFAULT 'RSVPed' CHECK (status IN ('RSVPed', 'Purchased', 'Confirmed', 'Pending', 'Cancelled', 'Checked-In')),
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    paid_amount DECIMAL(10, 2) DEFAULT 0.00,
+    ticket_type VARCHAR(100),
     UNIQUE(user_id, event_id)
 );
 

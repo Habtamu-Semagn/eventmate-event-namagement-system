@@ -45,8 +45,8 @@ const sidebarItems: SidebarItem[] = [
     { icon: Calendar, label: "Events", href: "/organiser/events" },
     { icon: PlusCircle, label: "Create Event", href: "/organiser/create" },
     { icon: Users, label: "Attendees", href: "/organiser/attendees" },
-    { icon: Ticket, label: "Tickets", href: "/organiser/tickets", badge: "3" },
-    { icon: Bell, label: "Notifications", href: "/organiser/notifications", badge: "5" },
+    { icon: Ticket, label: "Tickets", href: "/organiser/tickets" },
+    { icon: Bell, label: "Notifications", href: "/organiser/notifications" },
 ]
 
 // Navigation Item Component

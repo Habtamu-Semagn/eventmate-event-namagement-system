@@ -8,6 +8,19 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { useTheme } from "@/components/theme-provider"
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { useToast } from "@/components/ui/use-toast"
+import {
     Table,
     TableBody,
     TableCell,
@@ -33,12 +46,15 @@ import {
     XCircle,
     Clock,
     Calendar,
-    Loader2
+    Loader2,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react"
 import { eventsApi } from '@/lib/api'
 
 export default function OrganiserAttendeesPage() {
     const { theme } = useTheme()
+    const { toast } = useToast()
     const [searchQuery, setSearchQuery] = useState('')
     const [eventFilter, setEventFilter] = useState('all')
     const [statusFilter, setStatusFilter] = useState('all')
@@ -46,6 +62,14 @@ export default function OrganiserAttendeesPage() {
     const [myEvents, setMyEvents] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const ITEMS_PER_PAGE = 10
+
+    // Dialog states
+    const [selectedAttendee, setSelectedAttendee] = useState<any>(null)
+    const [detailsOpen, setDetailsOpen] = useState(false)
+    const [cancelOpen, setCancelOpen] = useState(false)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -55,11 +79,14 @@ export default function OrganiserAttendeesPage() {
                     eventsApi.getOrganizerEvents(),
                     eventsApi.getOrganizerRegistrations({
                         event_id: eventFilter !== 'all' ? eventFilter : undefined,
-                        status: statusFilter !== 'all' ? statusFilter : undefined
+                        status: statusFilter !== 'all' ? statusFilter : undefined,
+                        page: currentPage,
+                        limit: ITEMS_PER_PAGE
                     })
                 ])
                 setMyEvents(eventsRes.data.events)
                 setAttendees(regRes.data.registrations)
+                setTotalPages(regRes.data.pagination?.totalPages || 1)
             } catch (err) {
                 console.error('Failed to fetch organiser data:', err)
                 setError('Failed to load attendees data')
@@ -68,7 +95,7 @@ export default function OrganiserAttendeesPage() {
             }
         }
         fetchData()
-    }, [eventFilter, statusFilter])
+    }, [eventFilter, statusFilter, currentPage])
 
     const filteredAttendees = attendees.filter(attendee => {
         const matchesSearch = attendee.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -230,67 +257,212 @@ export default function OrganiserAttendeesPage() {
                             No attendees found
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow className={theme === "dark" ? "border-slate-800" : ""}>
-                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Attendee</TableHead>
-                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Event</TableHead>
-                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Ticket Type</TableHead>
-                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Purchase Date</TableHead>
-                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Amount</TableHead>
-                                    <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Status</TableHead>
-                                    <TableHead className={`text-right ${theme === "dark" ? "text-slate-400" : ""}`}>Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredAttendees.map((attendee) => (
-                                    <TableRow key={attendee.id} className={theme === "dark" ? "border-slate-800" : ""}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className={theme === "dark" ? "bg-slate-700" : ""}>
-                                                    <AvatarFallback className={theme === "dark" ? "bg-slate-600 text-slate-200" : ""}>{attendee.user_name.charAt(0)}</AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <p className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{attendee.user_name}</p>
-                                                    <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>{attendee.user_email}</p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{attendee.event_title}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className={theme === "dark" ? "border-slate-700 text-slate-300" : ""}>{attendee.ticket_type || 'General'}</Badge>
-                                        </TableCell>
-                                        <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{new Date(attendee.created_at).toLocaleDateString()}</TableCell>
-                                        <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{formatCurrency(attendee.paid_amount)}</TableCell>
-                                        <TableCell>
-                                            <Badge className={`${getStatusBadge(attendee.status)} border capitalize`}>
-                                                {attendee.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`}>
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                {(attendee.status === 'Confirmed' || attendee.status === 'RSVPed' || attendee.status === 'Purchased') && (
-                                                    <Button variant="ghost" size="icon" className={`h-8 w-8 ${theme === "dark" ? "text-green-400 hover:bg-slate-800" : "text-green-600"}`}>
-                                                        <CheckCircle className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                                {(attendee.status === 'Confirmed' || attendee.status === 'RSVPed' || attendee.status === 'Purchased') && (
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600">
-                                                        <XCircle className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </TableCell>
+                        <>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className={theme === "dark" ? "border-slate-800" : ""}>
+                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Attendee</TableHead>
+                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Event</TableHead>
+                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Ticket Type</TableHead>
+                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Purchase Date</TableHead>
+                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Amount</TableHead>
+                                        <TableHead className={theme === "dark" ? "text-slate-400" : ""}>Status</TableHead>
+                                        <TableHead className={`text-right ${theme === "dark" ? "text-slate-400" : ""}`}>Actions</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredAttendees.map((attendee) => (
+                                        <TableRow key={attendee.id} className={theme === "dark" ? "border-slate-800" : ""}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className={theme === "dark" ? "bg-slate-700" : ""}>
+                                                        <AvatarFallback className={theme === "dark" ? "bg-slate-600 text-slate-200" : ""}>{attendee.user_name.charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <p className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{attendee.user_name}</p>
+                                                        <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>{attendee.user_email}</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{attendee.event_title}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className={theme === "dark" ? "border-slate-700 text-slate-300" : ""}>{attendee.ticket_type || 'General'}</Badge>
+                                            </TableCell>
+                                            <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{new Date(attendee.created_at).toLocaleDateString()}</TableCell>
+                                            <TableCell className={theme === "dark" ? "text-slate-300" : ""}>{formatCurrency(attendee.paid_amount)}</TableCell>
+                                            <TableCell>
+                                                <Badge className={`${getStatusBadge(attendee.status)} border capitalize`}>
+                                                    {attendee.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className={`h-8 w-8 ${theme === "dark" ? "text-slate-400 hover:bg-slate-800" : ""}`}
+                                                                onClick={() => {
+                                                                    setSelectedAttendee(attendee)
+                                                                    setDetailsOpen(true)
+                                                                }}
+                                                            >
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>View Details</TooltipContent>
+                                                    </Tooltip>
+                                                    {(attendee.status === 'Confirmed' || attendee.status === 'RSVPed' || attendee.status === 'Purchased') && (
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className={`h-8 w-8 ${theme === "dark" ? "text-green-400 hover:bg-slate-800" : "text-green-600"}`}
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            await eventsApi.updateRegistrationStatus(attendee.id, 'Checked-In')
+                                                                            toast({ title: "Success", description: "Attendee checked in successfully" })
+                                                                            // Refresh data
+                                                                            const regRes = await eventsApi.getOrganizerRegistrations({
+                                                                                event_id: eventFilter !== 'all' ? eventFilter : undefined,
+                                                                                status: statusFilter !== 'all' ? statusFilter : undefined,
+                                                                                page: currentPage,
+                                                                                limit: ITEMS_PER_PAGE
+                                                                            })
+                                                                            setAttendees(regRes.data.registrations)
+                                                                        } catch (err: any) {
+                                                                            toast({ title: "Error", description: err.message || "Failed to check in attendee", variant: "destructive" })
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <CheckCircle className="h-4 w-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Check In</TooltipContent>
+                                                        </Tooltip>
+                                                    )}
+                                                    {(attendee.status === 'Confirmed' || attendee.status === 'RSVPed' || attendee.status === 'Purchased') && (
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 text-red-500 hover:text-red-600"
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            await eventsApi.updateRegistrationStatus(attendee.id, 'Cancelled')
+                                                                            toast({ title: "Success", description: "Registration cancelled successfully" })
+                                                                            // Refresh data
+                                                                            const regRes = await eventsApi.getOrganizerRegistrations({
+                                                                                event_id: eventFilter !== 'all' ? eventFilter : undefined,
+                                                                                status: statusFilter !== 'all' ? statusFilter : undefined,
+                                                                                page: currentPage,
+                                                                                limit: ITEMS_PER_PAGE
+                                                                            })
+                                                                            setAttendees(regRes.data.registrations)
+                                                                        } catch (err: any) {
+                                                                            toast({ title: "Error", description: err.message || "Failed to cancel registration", variant: "destructive" })
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <XCircle className="h-4 w-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Cancel Registration</TooltipContent>
+                                                        </Tooltip>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+
+                            {/* Pagination */}
+                            <div className="flex items-center justify-between mt-4">
+                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>
+                                    Page {currentPage} of {totalPages}
+                                </p>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className={theme === "dark" ? "border-slate-700" : ""}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage >= totalPages}
+                                        className={theme === "dark" ? "border-slate-700" : ""}
+                                    >
+                                        Next
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </>
                     )}
                 </CardContent>
             </Card>
+
+            {/* View Details Dialog */}
+            <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+                <DialogContent className={theme === "dark" ? "bg-slate-900 border-slate-700" : ""}>
+                    <DialogHeader>
+                        <DialogTitle className={theme === "dark" ? "text-slate-100" : ""}>Attendee Details</DialogTitle>
+                        <DialogDescription className={theme === "dark" ? "text-slate-400" : ""}>
+                            Complete registration information
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedAttendee && (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-4">
+                                <Avatar className={`h-16 w-16 ${theme === "dark" ? "bg-slate-700" : ""}`}>
+                                    <AvatarFallback className={theme === "dark" ? "bg-slate-600 text-slate-200 text-xl" : ""}>
+                                        {selectedAttendee.user_name?.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className={`text-lg font-semibold ${theme === "dark" ? "text-slate-100" : ""}`}>{selectedAttendee.user_name}</p>
+                                    <p className={theme === "dark" ? "text-slate-400" : "text-muted-foreground"}>{selectedAttendee.user_email}</p>
+                                </div>
+                            </div>
+                            <div className={`grid grid-cols-2 gap-4 p-4 rounded-lg ${theme === "dark" ? "bg-slate-800" : "bg-slate-50"}`}>
+                                <div>
+                                    <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Event</p>
+                                    <p className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{selectedAttendee.event_title}</p>
+                                </div>
+                                <div>
+                                    <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Ticket Type</p>
+                                    <p className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{selectedAttendee.ticket_type || 'General'}</p>
+                                </div>
+                                <div>
+                                    <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Purchase Date</p>
+                                    <p className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{new Date(selectedAttendee.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                    <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Amount Paid</p>
+                                    <p className={`font-medium ${theme === "dark" ? "text-slate-100" : ""}`}>{formatCurrency(selectedAttendee.paid_amount)}</p>
+                                </div>
+                                <div className="col-span-2">
+                                    <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Status</p>
+                                    <Badge className={`mt-1 ${getStatusBadge(selectedAttendee.status)} border capitalize`}>
+                                        {selectedAttendee.status}
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

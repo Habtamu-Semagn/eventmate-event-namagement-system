@@ -241,6 +241,12 @@ export const eventsApi = {
         return fetchApi<OrganizerEventsResponse>(`/events/organizer/my-events${query ? `?${query}` : ''}`);
     },
 
+    updateEvent: (eventId: number, eventData: any) =>
+        fetchApi<{ success: boolean }>(`/events/${eventId}`, {
+            method: 'PUT',
+            body: JSON.stringify(eventData),
+        }),
+
     getOrganizerRegistrations: (filters?: { event_id?: number | string; status?: string; page?: number; limit?: number }) => {
         const searchParams = new URLSearchParams();
         if (filters?.event_id) searchParams.set('event_id', filters.event_id.toString());
@@ -263,9 +269,21 @@ export const eventsApi = {
                     ticket_type: string | null;
                     paid_amount: number | null;
                 }>;
+                pagination: {
+                    page: number;
+                    limit: number;
+                    total: number;
+                    totalPages: number;
+                };
             };
         }>(`/events/organizer/registrations${query ? `?${query}` : ''}`);
     },
+
+    updateRegistrationStatus: (registrationId: number, status: string) =>
+        fetchApi<{ success: boolean; message: string }>(`/events/registrations/${registrationId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({ status }),
+        }),
 
     getOrganizerStats: () =>
         fetchApi<{

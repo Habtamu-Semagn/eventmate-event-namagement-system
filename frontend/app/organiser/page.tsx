@@ -235,64 +235,34 @@ export default function OrganiserDashboard() {
                             </CardContent>
                         </Card>
 
-                        {/* Recent Activity Tabs */}
+                        {/* Recent Attendees */}
                         <Card className={`lg:col-span-3 ${theme === "dark" ? "border-slate-800 bg-slate-900/50" : ""}`}>
-                            <Tabs defaultValue="attendees">
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <TabsList>
-                                        <TabsTrigger value="attendees">Attendees</TabsTrigger>
-                                        <TabsTrigger value="notifications">Alerts</TabsTrigger>
-                                    </TabsList>
-                                </CardHeader>
-                                <CardContent>
-                                    <TabsContent value="attendees" className="mt-0 space-y-4">
-                                        {recentAttendees.length === 0 ? (
-                                            <p className="text-center py-10 text-muted-foreground">No recent attendees.</p>
-                                        ) : (
-                                            recentAttendees.map((attendee) => (
-                                                <div key={attendee.id} className="flex items-center gap-4">
-                                                    <Avatar>
-                                                        <AvatarFallback>{attendee.user_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="flex-1 space-y-1">
-                                                        <p className="text-sm font-medium leading-none">{attendee.user_name}</p>
-                                                        <p className="text-xs text-muted-foreground line-clamp-1">
-                                                            Registered for {attendee.event_title}
-                                                        </p>
-                                                    </div>
-                                                    <StatusBadge status={attendee.status} />
+                            <CardHeader>
+                                <CardTitle>Recent Attendees</CardTitle>
+                                <CardDescription>People who registered for your events.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {recentAttendees.length === 0 ? (
+                                        <p className="text-center py-10 text-muted-foreground">No recent attendees.</p>
+                                    ) : (
+                                        recentAttendees.map((attendee) => (
+                                            <div key={attendee.id} className="flex items-center gap-4">
+                                                <Avatar>
+                                                    <AvatarFallback>{attendee.user_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1 space-y-1">
+                                                    <p className="text-sm font-medium leading-none">{attendee.user_name}</p>
+                                                    <p className="text-xs text-muted-foreground line-clamp-1">
+                                                        Registered for {attendee.event_title}
+                                                    </p>
                                                 </div>
-                                            ))
-                                        )}
-                                    </TabsContent>
-                                    <TabsContent value="notifications" className="mt-0 space-y-4">
-                                        {notifications.length === 0 ? (
-                                            <p className="text-center py-10 text-muted-foreground">No recent notifications.</p>
-                                        ) : (
-                                            notifications.map((notification) => (
-                                                <div key={notification.id} className="flex gap-4">
-                                                    <div className="mt-1">
-                                                        {notification.message.includes('approve') ? (
-                                                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                                        ) : (
-                                                            <Clock className="h-4 w-4 text-blue-500" />
-                                                        )}
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <p className="text-sm font-medium leading-none">System Alert</p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {notification.message}
-                                                        </p>
-                                                        <p className="text-[10px] text-muted-foreground">
-                                                            {new Date(notification.sent_at).toLocaleTimeString()}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </TabsContent>
-                                </CardContent>
-                            </Tabs>
+                                                <StatusBadge status={attendee.status} />
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </CardContent>
                         </Card>
                     </div>
 
