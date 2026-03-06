@@ -27,54 +27,13 @@ import {
     LayoutDashboard,
     BarChart3
 } from 'lucide-react';
-import { notificationsApi, Notification } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
+import NotificationBell from '@/components/NotificationBell';
 
 export default function Navbar() {
     const { user, userData, signOut } = useAuth();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
-
-    useEffect(() => {
-        if (user) {
-            fetchNotifications();
-            // Poll for notifications every 30 seconds
-            const interval = setInterval(fetchNotifications, 30000);
-            return () => clearInterval(interval);
-        }
-    }, [user]);
-
-    const fetchNotifications = async () => {
-        try {
-            const response = await notificationsApi.getMyNotifications();
-            if (response.success) {
-                setNotifications(response.data.notifications);
-                setUnreadCount(response.data.notifications.filter(n => !n.is_read).length);
-            }
-        } catch (error) {
-            console.error('Failed to fetch notifications:', error);
-        }
-    };
-
-    const handleMarkAsRead = async (id: number) => {
-        try {
-            await notificationsApi.markAsRead(id);
-            fetchNotifications();
-        } catch (error) {
-            console.error('Failed to mark notification as read:', error);
-        }
-    };
-
-    const handleMarkAllAsRead = async () => {
-        try {
-            await notificationsApi.markAllAsRead();
-            fetchNotifications();
-        } catch (error) {
-            console.error('Failed to mark all as read:', error);
-        }
-    };
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -169,65 +128,8 @@ export default function Navbar() {
                     <Search className="h-5 w-5" />
                 </Button>
 
-                {/* Notification Dropdown */}
-                {user && (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-[#AC1212]">
-                                <Bell className="h-5 w-5" />
-                                {unreadCount > 0 && (
-                                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-[#AC1212] text-white border-0 text-[10px]">
-                                        {unreadCount > 9 ? '9+' : unreadCount}
-                                    </Badge>
-                                )}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-80">
-                            <div className="flex items-center justify-between p-4">
-                                <h3 className="font-semibold">Notifications</h3>
-                                {unreadCount > 0 && (
-                                    <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="text-xs h-auto p-0 hover:bg-transparent text-[#AC1212] font-medium">
-                                        Mark all as read
-                                    </Button>
-                                )}
-                            </div>
-                            <DropdownMenuSeparator />
-                            <div className="max-h-[300px] overflow-y-auto">
-                                {notifications.length > 0 ? (
-                                    notifications.map((notification) => (
-                                        <div
-                                            key={notification.id}
-                                            className={`p-4 border-b border-muted last:border-0 flex gap-3 ${!notification.is_read ? 'bg-muted/30' : ''}`}
-                                        >
-                                            <div className="flex-1">
-                                                <p className={`text-sm ${!notification.is_read ? 'font-medium' : 'text-muted-foreground'}`}>
-                                                    {notification.message}
-                                                </p>
-                                                <p className="text-[10px] text-muted-foreground mt-1">
-                                                    {new Date(notification.sent_at).toLocaleString()}
-                                                </p>
-                                            </div>
-                                            {!notification.is_read && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6 text-muted-foreground hover:text-[#AC1212]"
-                                                    onClick={() => handleMarkAsRead(notification.id)}
-                                                >
-                                                    <Check className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="p-8 text-center text-muted-foreground text-sm">
-                                        No notifications yet
-                                    </div>
-                                )}
-                            </div>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )}
+                {/* Notification Bell */}
+                <NotificationBell />
 
                 {/* Messages */}
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-[#AC1212]">

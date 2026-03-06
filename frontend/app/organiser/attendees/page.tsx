@@ -64,6 +64,15 @@ export default function OrganiserAttendeesPage() {
     const [error, setError] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
+    const [stats, setStats] = useState({
+        confirmed: 0,
+        checkedIn: 0,
+        pending: 0,
+        totalRevenue: 0,
+        totalAttendees: 0,
+        cancelled: 0
+    })
+    const [exporting, setExporting] = useState(false)
     const ITEMS_PER_PAGE = 10
 
     // Dialog states
@@ -87,6 +96,9 @@ export default function OrganiserAttendeesPage() {
                 setMyEvents(eventsRes.data.events)
                 setAttendees(regRes.data.registrations)
                 setTotalPages(regRes.data.pagination?.totalPages || 1)
+                if ((regRes.data as any).stats) {
+                    setStats((regRes.data as any).stats)
+                }
             } catch (err) {
                 console.error('Failed to fetch organiser data:', err)
                 setError('Failed to load attendees data')
@@ -117,13 +129,60 @@ export default function OrganiserAttendeesPage() {
     }
 
     const formatCurrency = (amount: number | null) => {
-        if (!amount) return '$0.00';
+        if (amount === null || amount === undefined) return '$0.00';
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
     }
 
-    const confirmedCount = attendees.filter(a => ['Confirmed', 'RSVPed', 'Purchased'].includes(a.status)).length
-    const checkedInCount = attendees.filter(a => a.status === 'Checked-In').length
-    const totalRevenue = attendees.reduce((sum, a) => sum + (Number(a.paid_amount) || 0), 0)
+    const handleExport = async () => {
+        try {
+            setExporting(true)
+            // Fetch all filtered registrations (not just current page)
+            const res = await eventsApi.getOrganizerRegistrations({
+                event_id: eventFilter !== 'all' ? eventFilter : undefined,
+                status: statusFilter !== 'all' ? statusFilter : undefined,
+                limit: 1000 // High limit to get everything
+            })
+
+            if (!res.success || !res.data.registrations.length) {
+                toast({ title: "No data", description: "No attendees found to export", variant: "destructive" })
+                return
+            }
+
+            const data = res.data.registrations
+            const headers = ["Name", "Email", "Event", "Ticket Type", "Purchase Date", "Amount", "Status"]
+
+            const csvRows = [
+                headers.join(','),
+                ...data.map(row => [
+                    `"${row.user_name.replace(/"/g, '""')}"`,
+                    `"${row.user_email.replace(/"/g, '""')}"`,
+                    `"${row.event_title.replace(/"/g, '""')}"`,
+                    `"${(row.ticket_type || 'General').replace(/"/g, '""')}"`,
+                    `"${new Date(row.created_at).toLocaleDateString()}"`,
+                    `"${formatCurrency(row.paid_amount).replace(/"/g, '""')}"`,
+                    `"${row.status.replace(/"/g, '""')}"`
+                ].join(','))
+            ]
+
+            const csvContent = csvRows.join('\n')
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.setAttribute('href', url)
+            link.setAttribute('download', `attendees_${new Date().toISOString().split('T')[0]}.csv`)
+            link.style.visibility = 'hidden'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+
+            toast({ title: "Success", description: "Attendee list exported successfully" })
+        } catch (err) {
+            console.error('Export failed:', err)
+            toast({ title: "Error", description: "Failed to export attendee list", variant: "destructive" })
+        } finally {
+            setExporting(false)
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -133,63 +192,60 @@ export default function OrganiserAttendeesPage() {
                     <h1 className={`text-3xl font-bold tracking-tight ${theme === "dark" ? "text-slate-100" : ""}`}>Attendees</h1>
                     <p className={theme === "dark" ? "text-slate-400" : "text-muted-foreground"}>Manage event attendees and registrations</p>
                 </div>
-                <Button variant="outline" className={theme === "dark" ? "border-slate-700 hover:bg-slate-800" : ""}>
-                    <Download className="h-4 w-4 mr-2" />
+                <Button
+                    variant="outline"
+                    className={theme === "dark" ? "border-slate-700 hover:bg-slate-800" : ""}
+                    onClick={handleExport}
+                    disabled={exporting}
+                >
+                    {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
                     Export List
                 </Button>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-green-500/10">
-                                <CheckCircle className="h-6 w-6 text-green-500" />
-                            </div>
-                            <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{confirmedCount}</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Confirmed</p>
-                            </div>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                <Card className={`border-none ${theme === "dark" ? "bg-slate-900 shadow-lg shadow-black/20" : "bg-white shadow-sm shadow-slate-200"}`}>
+                    <CardContent className="p-6">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Confirmed</p>
+                            <p className={`text-3xl font-extrabold tracking-tight ${theme === "dark" ? "text-slate-50" : "text-slate-900"}`}>{stats.confirmed}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-blue-500/10">
-                                <Users className="h-6 w-6 text-blue-500" />
-                            </div>
-                            <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{checkedInCount}</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Checked In</p>
-                            </div>
+
+                <Card className={`border-none ${theme === "dark" ? "bg-slate-900 shadow-lg shadow-black/20" : "bg-white shadow-sm shadow-slate-200"}`}>
+                    <CardContent className="p-6">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Checked In</p>
+                            <p className={`text-3xl font-extrabold tracking-tight ${theme === "dark" ? "text-slate-50" : "text-slate-900"}`}>{stats.checkedIn}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-yellow-500/10">
-                                <Clock className="h-6 w-6 text-yellow-500" />
-                            </div>
-                            <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{attendees.filter(a => a.status === 'Pending').length}</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Pending</p>
-                            </div>
+
+                <Card className={`border-none ${theme === "dark" ? "bg-slate-900 shadow-lg shadow-black/20" : "bg-white shadow-sm shadow-slate-200"}`}>
+                    <CardContent className="p-6">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Pending</p>
+                            <p className={`text-3xl font-extrabold tracking-tight ${theme === "dark" ? "text-slate-50" : "text-slate-900"}`}>{stats.pending}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-green-500/10">
-                                <Users className="h-6 w-6 text-green-500" />
-                            </div>
-                            <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{formatCurrency(totalRevenue)}</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Revenue</p>
-                            </div>
+
+                <Card className={`border-none ${theme === "dark" ? "bg-slate-900 shadow-lg shadow-black/20" : "bg-white shadow-sm shadow-slate-200"}`}>
+                    <CardContent className="p-6">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Cancelled</p>
+                            <p className={`text-3xl font-extrabold tracking-tight ${theme === "dark" ? "text-slate-50" : "text-slate-900"}`}>{stats.cancelled}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className={`border-none ${theme === "dark" ? "bg-slate-900 shadow-lg shadow-black/20" : "bg-white shadow-sm shadow-slate-200"}`}>
+                    <CardContent className="p-6">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Total Attendees</p>
+                            <p className={`text-3xl font-extrabold tracking-tight ${theme === "dark" ? "text-slate-50" : "text-slate-900"}`}>{stats.totalAttendees}</p>
                         </div>
                     </CardContent>
                 </Card>

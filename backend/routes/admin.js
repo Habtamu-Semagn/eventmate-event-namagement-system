@@ -157,7 +157,7 @@ router.delete('/events/:id', async (req, res) => {
  */
 router.get('/users', adminValidation.userList, async (req, res) => {
     try {
-        const { page = 1, limit = 10, role, status } = req.query;
+        const { page = 1, limit = 10, role, status, search } = req.query;
 
         const conditions = [];
         const values = [];
@@ -172,6 +172,12 @@ router.get('/users', adminValidation.userList, async (req, res) => {
         if (status) {
             conditions.push('status = $' + paramCount);
             values.push(status);
+            paramCount++;
+        }
+
+        if (search) {
+            conditions.push(`(name ILIKE $${paramCount} OR email ILIKE $${paramCount})`);
+            values.push(`%${search}%`);
             paramCount++;
         }
 

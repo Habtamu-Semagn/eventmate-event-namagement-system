@@ -66,7 +66,9 @@ async function fetchApi<T>(
     const data = await response.json();
 
     if (!response.ok) {
-        throw new Error(data.message || 'An error occurred');
+        const error: any = new Error(data.message || 'An error occurred');
+        error.errors = data.errors;
+        throw error;
     }
 
     return data;
@@ -297,8 +299,12 @@ export const eventsApi = {
             }
         }>('/events/organizer/stats'),
 
-    getOrganizerTickets: () =>
-        fetchApi<{ success: boolean; data: { tickets: any[] } }>('/events/organizer/tickets'),
+    getOrganizerTickets: (params?: { page?: number; limit?: number }) => {
+        const query = params ? new URLSearchParams(params as any).toString() : '';
+        return fetchApi<{ success: boolean; data: { tickets: any[]; pagination: any } }>(
+            `/events/organizer/tickets${query ? `?${query}` : ''}`
+        );
+    },
 
     rsvp: (eventId: number) =>
         fetchApi<{ success: boolean }>(`/events/${eventId}/rsvp`, {
@@ -309,6 +315,28 @@ export const eventsApi = {
         fetchApi<{ success: boolean }>(`/events/${eventId}/rsvp`, {
             method: 'DELETE',
         }),
+
+    uploadImage: (file: File) => {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        // Custom fetch for multipart/form-data as fetchApi sets Content-Type to application/json
+        const token = getToken();
+        const headers: any = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        return fetch(`${API_BASE_URL}/events/upload`, {
+            method: 'POST',
+            headers,
+            body: formData,
+        }).then(res => {
+            if (res.status === 401) {
+                removeToken();
+                if (typeof window !== 'undefined') window.location.href = '/login';
+            }
+            return res.json();
+        }) as Promise<{ success: boolean; data: { imageUrl: string } }>;
+    },
 };
 
 // ============ REGISTRATIONS API ============
@@ -402,11 +430,24 @@ export const notificationsApi = {
             method: 'PATCH',
         }),
 
-    send: (userId: number | null, eventId: number | null, message: string) =>
-        fetchApi<{ success: boolean }>('/notifications/send', {
+    send: (userId: number | null, event_id: number | null, message: string) => {
+        const body: any = { message };
+        if (userId) body.user_id = userId;
+        if (event_id) body.event_id = event_id;
+        return fetchApi<{ success: boolean }>('/notifications/send', {
             method: 'POST',
-            body: JSON.stringify({ user_id: userId, event_id: eventId, message }),
+            body: JSON.stringify(body),
+        });
+    },
+
+    sendBulk: (user_ids: number[], message: string) =>
+        fetchApi<{ success: boolean }>('/notifications/send-bulk', {
+            method: 'POST',
+            body: JSON.stringify({ user_ids, message }),
         }),
+
+    getTemplates: () =>
+        fetchApi<{ success: boolean; data: { templates: any[] } }>('/notifications/templates'),
 };
 
 // ============ ADMIN API ============
@@ -464,18 +505,19 @@ export const adminApi = {
         return fetchApi<{ success: boolean; data: { events: any[]; pagination: any } }>(`/admin/events${query ? `?${query}` : ''}`);
     },
 
-    getUsers: (params?: { page?: number; limit?: number; role?: string; status?: string }) => {
+    getUserDetails: (userId: number) =>
+        fetchApi<{ success: boolean; data: { user: any; events_organized: any[]; events_booked: any[]; stats: any } }>(`/admin/users/${userId}`),
+
+    getUsers: (params?: { page?: number; limit?: number; role?: string; status?: string; search?: string }) => {
         const searchParams = new URLSearchParams();
         if (params?.page) searchParams.set('page', params.page.toString());
         if (params?.limit) searchParams.set('limit', params.limit.toString());
         if (params?.role) searchParams.set('role', params.role);
         if (params?.status) searchParams.set('status', params.status);
+        if (params?.search) searchParams.set('search', params.search);
         const query = searchParams.toString();
         return fetchApi<{ success: boolean; data: { users: any[]; pagination: any } }>(`/admin/users${query ? `?${query}` : ''}`);
     },
-
-    getUserDetails: (userId: number) =>
-        fetchApi<{ success: boolean; data: { user: any; events_organized: any[]; events_booked: any[]; stats: any } }>(`/admin/users/${userId}`),
 
     updateUserRole: (userId: number, role: string) =>
         fetchApi<{ success: boolean }>(`/admin/users/${userId}/role`, {

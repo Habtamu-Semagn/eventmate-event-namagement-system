@@ -41,6 +41,8 @@ export default function OrganiserCreateEventPage() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [success, setSuccess] = useState(false)
+    const [uploading, setUploading] = useState(false)
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -95,6 +97,27 @@ export default function OrganiserCreateEventPage() {
         setFormData({ ...formData, ticketCategories: updated })
     }
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        try {
+            setUploading(true)
+            setError('')
+            const res = await eventsApi.uploadImage(file)
+            if (res.success) {
+                updateFormData('image_url', res.data.imageUrl)
+            } else {
+                setError('Failed to upload image. Please try again.')
+            }
+        } catch (err: any) {
+            console.error('Image upload error:', err)
+            setError(err.message || 'Failed to upload image.')
+        } finally {
+            setUploading(false)
+        }
+    }
+
     const handleSubmit = async () => {
         setLoading(true)
         setError('')
@@ -127,7 +150,14 @@ export default function OrganiserCreateEventPage() {
                 router.push('/organiser/events')
             }, 2000)
         } catch (err: any) {
-            setError(err.message || 'Failed to create event. Please try again.')
+            console.error('Create event error:', err)
+            // If the error response has specific validation errors, show them
+            if (err.errors && Array.isArray(err.errors)) {
+                const errorMsg = err.errors.map((e: any) => e.message).join('. ')
+                setError(`Validation failed: ${errorMsg}`)
+            } else {
+                setError(err.message || 'Failed to create event. Please try again.')
+            }
         } finally {
             setLoading(false)
         }
@@ -277,15 +307,72 @@ export default function OrganiserCreateEventPage() {
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="image_url" className={theme === "dark" ? "text-slate-300" : ""}>Cover Image URL</Label>
-                            <Input
-                                id="image_url"
-                                placeholder="https://example.com/image.jpg"
-                                value={formData.image_url}
-                                onChange={(e) => updateFormData('image_url', e.target.value)}
-                                className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}
-                            />
+                        <div className="space-y-4">
+                            <Label className={theme === "dark" ? "text-slate-300" : ""}>Event Cover Image</Label>
+                            <div className="flex flex-col gap-4">
+                                <div
+                                    className={`relative aspect-video rounded-xl border-2 border-dashed overflow-hidden flex items-center justify-center ${theme === "dark" ? "border-slate-800 bg-slate-800/50" : "border-gray-200 bg-gray-50"
+                                        }`}
+                                >
+                                    {formData.image_url ? (
+                                        <>
+                                            <img
+                                                src={formData.image_url.startsWith('http') ? formData.image_url : `${API_BASE_URL}${formData.image_url}`}
+                                                alt="Event Preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <button
+                                                onClick={() => updateFormData('image_url', '')}
+                                                className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className="text-center p-6">
+                                            <Upload className={`mx-auto h-12 w-12 mb-2 ${theme === "dark" ? "text-slate-600" : "text-gray-300"}`} />
+                                            <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-gray-500"}`}>
+                                                Upload an image for your event
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="flex-1">
+                                        <Input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            id="image-upload"
+                                            onChange={handleImageUpload}
+                                            disabled={uploading}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full flex items-center gap-2"
+                                            onClick={() => document.getElementById('image-upload')?.click()}
+                                            disabled={uploading}
+                                        >
+                                            {uploading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Upload className="h-4 w-4" />
+                                            )}
+                                            {formData.image_url ? 'Change Image' : 'Upload from Device'}
+                                        </Button>
+                                    </div>
+                                    <div className="flex-[2]">
+                                        <Input
+                                            id="image_url"
+                                            placeholder="Or paste an image URL..."
+                                            value={formData.image_url}
+                                            onChange={(e) => updateFormData('image_url', e.target.value)}
+                                            className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -496,6 +583,18 @@ export default function OrganiserCreateEventPage() {
                                     </p>
                                 </div>
                             </div>
+                            {formData.image_url && (
+                                <div className="mt-4">
+                                    <p className={`text-sm mb-2 ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Event Cover</p>
+                                    <div className="aspect-video w-full max-w-md rounded-lg overflow-hidden border">
+                                        <img
+                                            src={formData.image_url.startsWith('http') ? formData.image_url : `${API_BASE_URL}${formData.image_url}`}
+                                            alt="Event Cover"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

@@ -61,6 +61,7 @@ export default function OrganiserEventsPage() {
     const { user, userData } = useAuth()
     const router = useRouter()
     const { toast } = useToast()
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
     const [events, setEvents] = useState<any[]>([])
@@ -69,12 +70,20 @@ export default function OrganiserEventsPage() {
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [totalEventsCount, setTotalEventsCount] = useState(0)
+    const [stats, setStats] = useState<any>({
+        total_events: 0,
+        total_attendees: 0,
+        total_revenue: 0,
+        active_events: 0,
+        events_by_status: { Pending: 0 }
+    })
     const ITEMS_PER_PAGE = 10
     const [selectedEvent, setSelectedEvent] = useState<any>(null)
     const [detailsOpen, setDetailsOpen] = useState(false)
     const [editOpen, setEditOpen] = useState(false)
     const [ticketsOpen, setTicketsOpen] = useState(false)
     const [editFormData, setEditFormData] = useState<any>({})
+    const [uploading, setUploading] = useState(false)
 
     // Redirect if not organizer or admin
     useEffect(() => {
@@ -102,6 +111,7 @@ export default function OrganiserEventsPage() {
                 setEvents(eventsResponse.data.events || [])
                 setTotalPages(eventsResponse.data.pagination?.totalPages || 1)
                 setTotalEventsCount(statsResponse.data.total_events || 0)
+                setStats(statsResponse.data)
             } catch (err: any) {
                 console.error('Failed to fetch organizer events:', err)
                 setError('Failed to load your events')
@@ -133,8 +143,27 @@ export default function OrganiserEventsPage() {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)
     }
 
-    const activeCount = filteredEvents.filter(e => e.status === 'Approved').length
-    const pendingCount = filteredEvents.filter(e => e.status === 'Pending').length
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        try {
+            setUploading(true)
+            const res = await eventsApi.uploadImage(file)
+            if (res.success) {
+                setEditFormData({ ...editFormData, image_url: res.data.imageUrl })
+                toast({ title: "Success", description: "Image uploaded successfully" })
+            } else {
+                toast({ title: "Error", description: "Failed to upload image", variant: "destructive" })
+            }
+        } catch (err: any) {
+            console.error('Image upload error:', err)
+            toast({ title: "Error", description: err.message || "Failed to upload image", variant: "destructive" })
+        } finally {
+            setUploading(false)
+        }
+    }
+
 
     if (loading) {
         return (
@@ -176,59 +205,49 @@ export default function OrganiserEventsPage() {
                 </Card>
             )}
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-green-500/10">
-                                <Calendar className="h-6 w-6 text-green-500" />
-                            </div>
-                            <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{totalEventsCount}</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Events</p>
-                            </div>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                <Card className={`border-none ${theme === "dark" ? "bg-slate-900 shadow-lg shadow-black/20" : "bg-white shadow-sm shadow-slate-200"}`}>
+                    <CardContent className="p-6">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Total Events</p>
+                            <p className={`text-3xl font-extrabold tracking-tight ${theme === "dark" ? "text-slate-50" : "text-slate-900"}`}>{stats.total_events}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-yellow-500/10">
-                                <Clock className="h-6 w-6 text-yellow-500" />
-                            </div>
-                            <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{pendingCount}</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Pending</p>
-                            </div>
+
+                <Card className={`border-none ${theme === "dark" ? "bg-slate-900 shadow-lg shadow-black/20" : "bg-white shadow-sm shadow-slate-200"}`}>
+                    <CardContent className="p-6">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Approved</p>
+                            <p className={`text-3xl font-extrabold tracking-tight ${theme === "dark" ? "text-slate-50" : "text-slate-900"}`}>{stats.active_events}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-slate-500/10">
-                                <Users className="h-6 w-6 text-slate-500" />
-                            </div>
-                            <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>
-                                    {filteredEvents.reduce((sum, e) => sum + (parseInt(e.registration_count) || 0), 0)}
-                                </p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Attendees</p>
-                            </div>
+
+                <Card className={`border-none ${theme === "dark" ? "bg-slate-900 shadow-lg shadow-black/20" : "bg-white shadow-sm shadow-slate-200"}`}>
+                    <CardContent className="p-6">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Pending</p>
+                            <p className={`text-3xl font-extrabold tracking-tight ${theme === "dark" ? "text-slate-50" : "text-slate-900"}`}>{stats.events_by_status.Pending || 0}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className={theme === "dark" ? "border-slate-800 bg-slate-900" : ""}>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-green-500/10">
-                                <DollarSign className="h-6 w-6 text-green-500" />
-                            </div>
-                            <div>
-                                <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{formatCurrency(0)}</p>
-                                <p className={`text-sm ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Total Revenue</p>
-                            </div>
+
+                <Card className={`border-none ${theme === "dark" ? "bg-slate-900 shadow-lg shadow-black/20" : "bg-white shadow-sm shadow-slate-200"}`}>
+                    <CardContent className="p-6">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Total Attendees</p>
+                            <p className={`text-3xl font-extrabold tracking-tight ${theme === "dark" ? "text-slate-50" : "text-slate-900"}`}>{stats.total_attendees}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className={`border-none ${theme === "dark" ? "bg-slate-900 shadow-lg shadow-black/20" : "bg-white shadow-sm shadow-slate-200"}`}>
+                    <CardContent className="p-6">
+                        <div className="space-y-1 text-center sm:text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Total Revenue</p>
+                            <p className={`text-3xl font-extrabold tracking-tight ${theme === "dark" ? "text-slate-50" : "text-slate-900"}`}>{formatCurrency(stats.total_revenue)}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -508,6 +527,49 @@ export default function OrganiserEventsPage() {
                                     className={`mt-1 ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
                                 />
                             </div>
+                            <div className="space-y-3">
+                                <label className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Event Image</label>
+                                {editFormData.image_url && (
+                                    <div className="aspect-video w-full rounded-lg overflow-hidden border">
+                                        <img
+                                            src={editFormData.image_url.startsWith('http') ? editFormData.image_url : `${API_BASE_URL}${editFormData.image_url}`}
+                                            alt="Preview"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                )}
+                                <div className="flex gap-2">
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        id="edit-image-upload"
+                                        onChange={handleImageUpload}
+                                        disabled={uploading}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1"
+                                        onClick={() => document.getElementById('edit-image-upload')?.click()}
+                                        disabled={uploading}
+                                    >
+                                        {uploading ? (
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        ) : (
+                                            <Plus className="h-4 w-4 mr-2" />
+                                        )}
+                                        {editFormData.image_url ? 'Change Image' : 'Upload Image'}
+                                    </Button>
+                                    <Input
+                                        placeholder="Or image URL..."
+                                        value={editFormData.image_url || ''}
+                                        onChange={(e) => setEditFormData({ ...editFormData, image_url: e.target.value })}
+                                        className={`flex-[2] h-9 ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                    />
+                                </div>
+                            </div>
                             <div className="flex justify-end gap-2 mt-4">
                                 <Button variant="outline" onClick={() => setEditOpen(false)} className={theme === "dark" ? "border-slate-700" : ""}>
                                     Cancel
@@ -523,7 +585,11 @@ export default function OrganiserEventsPage() {
                                             const response = await eventsApi.getOrganizerEvents({ page: currentPage, limit: ITEMS_PER_PAGE })
                                             setEvents(response.data.events || [])
                                         } catch (err: any) {
-                                            toast({ title: "Error", description: err.message || "Failed to update event", variant: "destructive" })
+                                            let errorMsg = err.message || "Failed to update event"
+                                            if (err.errors && Array.isArray(err.errors)) {
+                                                errorMsg = `Validation failed: ${err.errors.map((e: any) => e.message).join('. ')}`
+                                            }
+                                            toast({ title: "Error", description: errorMsg, variant: "destructive" })
                                         }
                                     }}
                                 >

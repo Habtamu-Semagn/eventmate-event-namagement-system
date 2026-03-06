@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { useTheme } from "@/components/theme-provider"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getUser } from "@/lib/api"
+import NotificationBell from "@/components/NotificationBell"
 import {
     Sheet,
     SheetContent,
@@ -45,6 +46,7 @@ const sidebarItems: SidebarItem[] = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
     { icon: Calendar, label: "Events", href: "/admin/events", badge: "24" },
     { icon: Users, label: "Users", href: "/admin/users", badge: "1.2k" },
+    { icon: Bell, label: "Notifications", href: "/admin/notifications" },
     { icon: FileText, label: "Content", href: "/admin/content" },
     { icon: History, label: "Audit Trail", href: "/admin/audit" },
 ]
@@ -327,9 +329,7 @@ export default function AdminLayout({
                     </Link>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="text-foreground">
-                        <Bell className="w-5 h-5" />
-                    </Button>
+                    <NotificationBell />
                 </div>
             </header>
 

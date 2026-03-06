@@ -168,6 +168,22 @@ const initializeDatabase = async () => {
             console.log('  ✗ ticket_type column: ' + err.message.substring(0, 50));
         }
 
+        // Migration: Update registrations_status_check constraint
+        console.log('Updating registrations_status_check constraint...');
+        try {
+            await pool.query(`
+                ALTER TABLE registrations 
+                DROP CONSTRAINT IF EXISTS registrations_status_check;
+                
+                ALTER TABLE registrations 
+                ADD CONSTRAINT registrations_status_check 
+                CHECK (status IN ('RSVPed', 'Purchased', 'Confirmed', 'Pending', 'Cancelled', 'Checked-In'));
+            `);
+            console.log('  ✓ Updated registrations_status_check constraint');
+        } catch (err) {
+            console.log('  ✗ registrations_status_check migration: ' + err.message.substring(0, 50));
+        }
+
         console.log('\nDatabase initialization complete!');
 
     } catch (error) {

@@ -267,14 +267,14 @@ export default function OrganiserDashboard() {
                     </div>
 
                     {/* Quick Actions Banner - Gradient CTA */}
-                    <Card className={theme === "dark" ? "bg-gradient-to-r from-red-900 to-slate-900 border-slate-800" : "bg-gradient-to-r from-red-600 to-red-700 border-0"}>
+                    <Card className={theme === "dark" ? "border-slate-800 bg-slate-900/50" : "bg-slate-50 border-slate-200"}>
                         <CardContent className="pt-6 pb-6">
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                 <div>
-                                    <h3 className="text-xl font-bold text-white">Ready to grow your audience?</h3>
-                                    <p className="text-white/80 mt-1">Create a new event and start selling tickets today.</p>
+                                    <h3 className={`text-xl font-bold ${theme === "dark" ? "text-slate-100" : "text-slate-900"}`}>Ready to grow your audience?</h3>
+                                    <p className={theme === "dark" ? "text-slate-400" : "text-muted-foreground"}>Create a new event and start selling tickets today.</p>
                                 </div>
-                                <Button asChild className="bg-white text-red-600 hover:bg-gray-100 font-semibold">
+                                <Button asChild className="bg-[#AC1212] hover:bg-[#8a0f0f] text-white font-semibold">
                                     <Link href="/organiser/create">
                                         <Plus className="h-5 w-5 mr-2" />
                                         Create New Event

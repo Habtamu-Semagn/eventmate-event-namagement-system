@@ -21,6 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { useToast } from "@/components/ui/use-toast"
 import {
     Ticket,
     Search,
@@ -44,11 +45,13 @@ export default function OrganiserTicketsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [eventFilter, setEventFilter] = useState('all')
     const [statusFilter, setStatusFilter] = useState('all')
+    const [exporting, setExporting] = useState(false)
+    const { toast } = useToast()
 
     const fetchTickets = async () => {
         try {
             setLoading(true)
-            const res = await eventsApi.getOrganizerTickets()
+            const res = await eventsApi.getOrganizerTickets({ limit: 100 }) // Fetch more for initial view
             if (res.success) {
                 setTickets(res.data.tickets)
             }
@@ -57,6 +60,85 @@ export default function OrganiserTicketsPage() {
             setError('Failed to fetch ticket data')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleExport = async () => {
+        try {
+            setExporting(true)
+            toast({
+                title: "Exporting Report",
+                description: "Preparing your CSV file...",
+            })
+
+            // Fetch all tickets for export (use a high limit)
+            const res = await eventsApi.getOrganizerTickets({ limit: 1000 })
+
+            if (!res.success || !res.data.tickets) {
+                throw new Error("Failed to fetch tickets for export")
+            }
+
+            const exportData = res.data.tickets.filter((ticket: any) => {
+                const matchesSearch = ticket.id?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    ticket.type.toLowerCase().includes(searchQuery.toLowerCase());
+                const matchesEvent = eventFilter === 'all' || ticket.event === eventFilter;
+                const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+                return matchesSearch && matchesEvent && matchesStatus;
+            })
+
+            if (exportData.length === 0) {
+                toast({
+                    title: "No Data",
+                    description: "No tickets found matching current filters.",
+                    variant: "destructive"
+                })
+                return
+            }
+
+            // Define CSV headers
+            const headers = ["Ticket ID", "Event", "Ticket Type", "Price", "Sold", "Revenue", "Status"]
+
+            // Map data to rows
+            const csvRows = exportData.map((t: any) => [
+                `TKT-${t.id}`,
+                `"${t.event.replace(/"/g, '""')}"`,
+                `"${t.type.replace(/"/g, '""')}"`,
+                t.price,
+                t.sold,
+                t.revenue,
+                t.status
+            ])
+
+            // Combine headers and rows
+            const csvContent = [
+                headers.join(","),
+                ...csvRows.map(row => row.join(","))
+            ].join("\n")
+
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement("a")
+            link.setAttribute("href", url)
+            link.setAttribute("download", `ticket_report_${new Date().toISOString().split('T')[0]}.csv`)
+            link.style.visibility = "hidden"
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+
+            toast({
+                title: "Export Successful",
+                description: `Exported ${exportData.length} ticket types to CSV.`,
+            })
+        } catch (err: any) {
+            console.error('Export error:', err)
+            toast({
+                title: "Export Failed",
+                description: "An error occurred while generating the CSV.",
+                variant: "destructive"
+            })
+        } finally {
+            setExporting(false)
         }
     }
 
@@ -100,8 +182,17 @@ export default function OrganiserTicketsPage() {
                     <h1 className={`text-3xl font-bold tracking-tight ${theme === "dark" ? "text-slate-100" : ""}`}>Tickets</h1>
                     <p className={theme === "dark" ? "text-slate-400" : "text-muted-foreground"}>Manage ticket types and pricing</p>
                 </div>
-                <Button variant="outline" className={theme === "dark" ? "border-slate-700 hover:bg-slate-800" : ""}>
-                    <Download className="h-4 w-4 mr-2" />
+                <Button
+                    variant="outline"
+                    className={theme === "dark" ? "border-slate-700 hover:bg-slate-800" : ""}
+                    onClick={handleExport}
+                    disabled={exporting || tickets.length === 0}
+                >
+                    {exporting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                    )}
                     Export Report
                 </Button>
             </div>

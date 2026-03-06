@@ -4,6 +4,33 @@ const { authenticate, optionalAuth } = require('../middleware/auth');
 const { isOrganizer } = require('../middleware/rbac');
 const { eventValidation, registrationValidation } = require('../middleware/validation');
 const { logger } = require('../utils/logger');
+const multer = require('multer');
+const path = require('path');
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (extname && mimetype) {
+            return cb(null, true);
+        }
+        cb(new Error('Only images are allowed (jpeg, jpg, png, webp)'));
+    }
+});
 
 const router = express.Router();
 
@@ -12,7 +39,21 @@ const router = express.Router();
  * Public endpoint to browse and search events (FREQ-4)
  * Query params: category, date, search, page, limit
  */
-router.get('/', optionalAuth, eventValidation.list, async (req, res) => {
+router.post('/upload', authenticate, isOrganizer, upload.single('image'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No file uploaded' });
+        }
+        const imageUrl = `/uploads/${req.file.filename}`;
+        res.json({ success: true, data: { imageUrl } });
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({ success: false, message: 'Error uploading image' });
+    }
+});
+
+/**
+ * GET /events
     try {
         const { category, date, search, page = 1, limit = 20 } = req.query;
 
@@ -193,7 +234,7 @@ router.get('/organizer/registrations', authenticate, isOrganizer, async (req, re
 
         if (event_id && status) {
             countQuery = `SELECT COUNT(*) FROM registrations r WHERE ${baseWhere} AND r.event_id = $2 AND r.status = $3`;
-            dataQuery = `SELECT r.*, e.title as event_title, e.date as event_date, e.time as event_time,
+            dataQuery = `SELECT r.*, r.timestamp as created_at, e.title as event_title, e.date as event_date, e.time as event_time,
                     u.name as user_name, u.email as user_email
              FROM registrations r
              JOIN events e ON r.event_id = e.id
@@ -205,7 +246,7 @@ router.get('/organizer/registrations', authenticate, isOrganizer, async (req, re
             countValues = [eventIds, parseInt(event_id), status];
         } else if (event_id) {
             countQuery = `SELECT COUNT(*) FROM registrations r WHERE ${baseWhere} AND r.event_id = $2`;
-            dataQuery = `SELECT r.*, e.title as event_title, e.date as event_date, e.time as event_time,
+            dataQuery = `SELECT r.*, r.timestamp as created_at, e.title as event_title, e.date as event_date, e.time as event_time,
                     u.name as user_name, u.email as user_email
              FROM registrations r
              JOIN events e ON r.event_id = e.id
@@ -217,7 +258,7 @@ router.get('/organizer/registrations', authenticate, isOrganizer, async (req, re
             countValues = [eventIds, parseInt(event_id)];
         } else if (status) {
             countQuery = `SELECT COUNT(*) FROM registrations r WHERE ${baseWhere} AND r.status = $2`;
-            dataQuery = `SELECT r.*, e.title as event_title, e.date as event_date, e.time as event_time,
+            dataQuery = `SELECT r.*, r.timestamp as created_at, e.title as event_title, e.date as event_date, e.time as event_time,
                     u.name as user_name, u.email as user_email
              FROM registrations r
              JOIN events e ON r.event_id = e.id
@@ -229,7 +270,7 @@ router.get('/organizer/registrations', authenticate, isOrganizer, async (req, re
             countValues = [eventIds, status];
         } else {
             countQuery = `SELECT COUNT(*) FROM registrations r WHERE ${baseWhere}`;
-            dataQuery = `SELECT r.*, e.title as event_title, e.date as event_date, e.time as event_time,
+            dataQuery = `SELECT r.*, r.timestamp as created_at, e.title as event_title, e.date as event_date, e.time as event_time,
                     u.name as user_name, u.email as user_email
              FROM registrations r
              JOIN events e ON r.event_id = e.id
@@ -245,6 +286,28 @@ router.get('/organizer/registrations', authenticate, isOrganizer, async (req, re
         const countResult = await db.query(countQuery, countValues);
         const total = parseInt(countResult.rows[0].count);
 
+        // Get aggregate stats for the filtered context
+        let statsWhere = baseWhere;
+        const statsValues = [eventIds];
+        if (event_id) {
+            statsWhere += ' AND r.event_id = $2';
+            statsValues.push(parseInt(event_id));
+        }
+
+        const statsQuery = `
+            SELECT 
+                COUNT(*) as total_count,
+                COUNT(*) FILTER (WHERE status IN ('Confirmed', 'RSVPed', 'Purchased')) as confirmed_count,
+                COUNT(*) FILTER (WHERE status = 'Checked-In') as checked_in_count,
+                COUNT(*) FILTER (WHERE status = 'Pending') as pending_count,
+                COUNT(*) FILTER (WHERE status = 'Cancelled') as cancelled_count,
+                COALESCE(SUM(paid_amount), 0) as total_revenue
+            FROM registrations r
+            WHERE ${statsWhere}
+        `;
+        const statsResult = await db.query(statsQuery, statsValues);
+        const stats = statsResult.rows[0];
+
         // Get paginated registrations
         const result = await db.query(dataQuery, values);
 
@@ -252,6 +315,14 @@ router.get('/organizer/registrations', authenticate, isOrganizer, async (req, re
             success: true,
             data: {
                 registrations: result.rows,
+                stats: {
+                    totalAttendees: parseInt(stats.total_count),
+                    confirmed: parseInt(stats.confirmed_count),
+                    checkedIn: parseInt(stats.checked_in_count),
+                    pending: parseInt(stats.pending_count),
+                    cancelled: parseInt(stats.cancelled_count),
+                    totalRevenue: parseFloat(stats.total_revenue)
+                },
                 pagination: {
                     page: parseInt(page),
                     limit: parseInt(limit),
@@ -688,12 +759,8 @@ router.put('/:id', authenticate, isOrganizer, async (req, res) => {
             });
         }
 
-        // If event was previously approved, set back to pending after edit (BR-04)
-        if (event.status === 'Approved') {
-            updates.push(`status = $${paramCount}`);
-            values.push('Pending');
-            paramCount++;
-        }
+        // Keep existing status on edit or allow manual status update if needed
+        // Removed: If event was previously approved, set back to pending after edit (BR-04)
 
         updates.push(`updated_at = CURRENT_TIMESTAMP`);
 

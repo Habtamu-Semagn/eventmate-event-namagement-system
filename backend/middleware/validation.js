@@ -111,8 +111,11 @@ const eventValidation = {
         body('image_url')
             .optional()
             .trim()
-            .isURL()
-            .withMessage('image_url must be a valid URL'),
+            .custom((value) => {
+                if (!value) return true;
+                return value.startsWith('/uploads/') || /^(https?:\/\/)/.test(value);
+            })
+            .withMessage('image_url must be a valid URL or a relative upload path'),
         body('city')
             .optional()
             .trim()
@@ -185,8 +188,11 @@ const eventValidation = {
         body('image_url')
             .optional()
             .trim()
-            .isURL()
-            .withMessage('image_url must be a valid URL'),
+            .custom((value) => {
+                if (!value) return true;
+                return value.startsWith('/uploads/') || /^(https?:\/\/)/.test(value);
+            })
+            .withMessage('image_url must be a valid URL or a relative upload path'),
         body('city')
             .optional()
             .trim()
@@ -279,6 +285,11 @@ const adminValidation = {
             .optional()
             .isInt({ min: 1, max: 100 })
             .withMessage('Limit must be between 1 and 100'),
+        query('search')
+            .optional()
+            .trim()
+            .isLength({ max: 100 })
+            .withMessage('Search query cannot exceed 100 characters'),
         query('role')
             .optional()
             .isIn(['Visitor', 'Registered User', 'Organizer', 'Administrator'])
