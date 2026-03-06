@@ -44,7 +44,7 @@ export default function Navbar() {
 
     const handleSignOut = async () => {
         await signOut();
-        router.push('/login');
+        router.push('/');
     };
 
     const getInitials = (name: string) => {

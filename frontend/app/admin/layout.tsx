@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/components/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -33,6 +34,7 @@ import {
     Sun,
     Shield,
     History,
+    Ticket,
 } from "lucide-react"
 
 interface SidebarItem {
@@ -45,6 +47,7 @@ interface SidebarItem {
 const sidebarItems: SidebarItem[] = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
     { icon: Calendar, label: "Events", href: "/admin/events", badge: "24" },
+    { icon: Ticket, label: "Registrations", href: "/admin/registrations" },
     { icon: Users, label: "Users", href: "/admin/users", badge: "1.2k" },
     { icon: Bell, label: "Notifications", href: "/admin/notifications" },
     { icon: FileText, label: "Content", href: "/admin/content" },
@@ -284,14 +287,16 @@ export default function AdminLayout({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
     const router = useRouter()
+    const { signOut } = useAuth()
 
     // Handle logout
-    const handleLogout = () => {
+    const handleLogout = async () => {
         if (typeof window !== 'undefined') {
             localStorage.removeItem('user');
             localStorage.removeItem('token');
         }
-        router.push('/login');
+        await signOut();
+        router.push('/');
     };
 
     // Check if user is admin - redirect if not

@@ -167,6 +167,22 @@ const initializeDatabase = async () => {
         } catch (err) {
             console.log('  ✗ ticket_type column: ' + err.message.substring(0, 50));
         }
+        try {
+            await pool.query(
+                `ALTER TABLE registrations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)`
+            );
+            console.log('  ✓ Added payment_method column');
+        } catch (err) {
+            console.log('  ✗ payment_method column: ' + err.message.substring(0, 50));
+        }
+        try {
+            await pool.query(
+                `ALTER TABLE registrations ADD COLUMN IF NOT EXISTS transaction_ref VARCHAR(100)`
+            );
+            console.log('  ✓ Added transaction_ref column');
+        } catch (err) {
+            console.log('  ✗ transaction_ref column: ' + err.message.substring(0, 50));
+        }
 
         // Migration: Update registrations_status_check constraint
         console.log('Updating registrations_status_check constraint...');

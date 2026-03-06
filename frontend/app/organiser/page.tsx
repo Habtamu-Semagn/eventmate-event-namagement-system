@@ -19,7 +19,7 @@ import {
     Users,
     Calendar,
     Ticket,
-    DollarSign,
+    Banknote,
     TrendingUp,
     Plus,
     Eye,
@@ -105,7 +105,7 @@ export default function OrganiserDashboard() {
     }, [])
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ETB' }).format(amount);
     }
 
     return (
@@ -165,7 +165,7 @@ export default function OrganiserDashboard() {
                         <Card className={theme === "dark" ? "border-slate-800 bg-slate-900/50" : ""}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                                 <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                <Banknote className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{formatCurrency(stats?.total_revenue || 0)}</div>

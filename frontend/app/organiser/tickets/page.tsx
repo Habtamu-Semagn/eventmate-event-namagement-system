@@ -28,7 +28,7 @@ import {
     Download,
     Eye,
     MoreHorizontal,
-    DollarSign,
+    Banknote,
     Users,
     CheckCircle,
     Clock,
@@ -166,7 +166,7 @@ export default function OrganiserTicketsPage() {
     const formatCurrency = (amount: number) => {
         // Handle string revenue from SQL aggregate
         const value = typeof amount === 'string' ? parseFloat(amount) : amount;
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0);
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ETB' }).format(value || 0);
     }
 
     const uniqueEvents = [...new Set(tickets.map(t => t.event))]
@@ -242,7 +242,7 @@ export default function OrganiserTicketsPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-green-500/10">
-                                <DollarSign className="h-6 w-6 text-green-500" />
+                                <Banknote className="h-6 w-6 text-green-500" />
                             </div>
                             <div>
                                 <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{formatCurrency(totalRevenue)}</p>

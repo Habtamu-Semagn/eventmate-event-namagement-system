@@ -13,7 +13,7 @@ import {
     Calendar,
     Users,
     Ticket,
-    DollarSign,
+    Banknote,
     AlertTriangle,
     Info,
     CheckSquare,

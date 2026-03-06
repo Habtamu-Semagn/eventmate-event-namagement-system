@@ -498,7 +498,7 @@ export default function OrganiserCreateEventPage() {
                                                 />
                                             </div>
                                             <div className="w-full sm:w-24 space-y-2">
-                                                <Label className="text-xs">Price ($)</Label>
+                                                <Label className="text-xs">Price (ETB)</Label>
                                                 <Input
                                                     type="number"
                                                     placeholder="0.00"

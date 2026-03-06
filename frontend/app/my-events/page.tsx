@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, MapPin, Users } from 'lucide-react';
 import Link from 'next/link';
-import { registrationsApi } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+import { registrationsApi, API_BASE_URL } from '@/lib/api';
 
 export default function MyEventsPage() {
+    const router = useRouter();
     const { user } = useAuth();
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -108,35 +110,44 @@ export default function MyEventsPage() {
                     )}
 
                     {!loading && !error && events.length > 0 && (
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {events.map((event) => (
-                                <Card key={event.id} className="overflow-hidden">
-                                    <CardContent className="p-6">
-                                        <div className="mb-4">
-                                            <span
-                                                className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${getStatus(event.date) === 'upcoming'
-                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                        : 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
-                                                    }`}
-                                            >
-                                                {getStatus(event.date) === 'upcoming' ? 'Upcoming' : 'Past'}
+                                <Card key={event.id} className="group overflow-hidden border-none shadow-none bg-zinc-50/50 dark:bg-zinc-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-900/50 transition-colors">
+                                    <div className="aspect-[4/3] relative bg-muted flex items-center justify-center overflow-hidden rounded-2xl mb-3">
+                                        {event.image_url ? (
+                                            <img
+                                                src={`${API_BASE_URL}${event.image_url}`}
+                                                alt={event.title}
+                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                        ) : (
+                                            <Calendar className="h-10 w-10 text-muted-foreground/30" />
+                                        )}
+                                        <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1">
+                                            <span className={`backdrop-blur-md text-[10px] font-black px-2.5 py-1 rounded-full border border-white/20 uppercase tracking-wider shadow-sm ${getStatus(event.date) === 'upcoming'
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-zinc-500 text-white'
+                                                }`}>
+                                                {getStatus(event.date)}
                                             </span>
-                                            <span className="ml-2 inline-block rounded-full px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                            <span className="bg-blue-500 text-white border border-white/20 backdrop-blur-md text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
                                                 {event.registration_status || 'Registered'}
                                             </span>
                                         </div>
-                                        <h3 className="mb-2 text-xl font-semibold">{event.title}</h3>
-                                        <div className="space-y-2 text-sm text-muted-foreground">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="h-4 w-4" />
-                                                {formatDate(event.date)} at {event.time}
+                                    </div>
+                                    <div className="px-1.5 pb-2 cursor-pointer" onClick={() => router.push(`/events/${event.id}`)}>
+                                        <h3 className="text-base font-bold line-clamp-1 mb-1 group-hover:text-[#AC1212] transition-colors">{event.title}</h3>
+                                        <div className="flex flex-col gap-1 text-[11px] font-medium text-muted-foreground">
+                                            <div className="flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100">
+                                                <Calendar className="h-3.5 w-3.5 text-[#AC1212]" />
+                                                <span>{formatDate(event.date)} at {event.time}</span>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <MapPin className="h-4 w-4" />
-                                                {event.location_venue || event.location || 'Location TBD'}
+                                            <div className="flex items-center gap-1.5 opacity-70">
+                                                <MapPin className="h-3.5 w-3.5" />
+                                                <span className="line-clamp-1">{event.location_venue || event.location || 'Location TBD'}</span>
                                             </div>
                                         </div>
-                                    </CardContent>
+                                    </div>
                                 </Card>
                             ))}
                         </div>

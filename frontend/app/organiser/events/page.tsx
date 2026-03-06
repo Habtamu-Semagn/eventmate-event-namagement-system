@@ -46,7 +46,7 @@ import {
     Trash2,
     Plus,
     Ticket,
-    DollarSign,
+    Banknote,
     Loader2,
     AlertCircle,
     ChevronLeft,
@@ -77,7 +77,7 @@ export default function OrganiserEventsPage() {
         active_events: 0,
         events_by_status: { Pending: 0 }
     })
-    const ITEMS_PER_PAGE = 10
+    const ITEMS_PER_PAGE = 12
     const [selectedEvent, setSelectedEvent] = useState<any>(null)
     const [detailsOpen, setDetailsOpen] = useState(false)
     const [editOpen, setEditOpen] = useState(false)
@@ -140,7 +140,7 @@ export default function OrganiserEventsPage() {
     }
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ETB' }).format(amount || 0)
     }
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

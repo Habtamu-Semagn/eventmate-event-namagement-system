@@ -17,7 +17,7 @@ import {
     TrendingDown,
     Users,
     Ticket,
-    DollarSign,
+    Banknote,
     Calendar,
     ArrowUpRight,
     ArrowDownRight,
@@ -55,7 +55,7 @@ export default function OrganiserAnalyticsPage() {
     }, [])
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ETB' }).format(amount || 0);
     }
 
     const formatNumber = (num: number) => {
@@ -152,7 +152,7 @@ export default function OrganiserAnalyticsPage() {
                                 <p className={`text-2xl font-bold ${theme === "dark" ? "text-slate-100" : ""} mt-1`}>{formatCurrency(stats?.total_revenue)}</p>
                             </div>
                             <div className="p-3 rounded-xl bg-green-500/10">
-                                <DollarSign className="h-6 w-6 text-green-500" />
+                                <Banknote className="h-6 w-6 text-green-500" />
                             </div>
                         </div>
                     </CardContent>

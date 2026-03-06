@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -8,13 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, MapPin, Heart, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { favoritesApi } from '@/lib/api';
+import { favoritesApi, API_BASE_URL } from '@/lib/api';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function FavoritesPage() {
+    const router = useRouter();
     const { user } = useAuth();
+    const { toast } = useToast();
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [removingId, setRemovingId] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchFavorites = async () => {
@@ -34,6 +39,19 @@ export default function FavoritesPage() {
 
         fetchFavorites();
     }, [user]);
+
+    const handleRemoveFavorite = async (eventId: number) => {
+        setRemovingId(eventId);
+        try {
+            await favoritesApi.removeFavorite(eventId);
+            setEvents(prev => prev.filter(e => e.id !== eventId));
+            toast({ title: "Removed from favorites" });
+        } catch (err: any) {
+            toast({ title: "Error", description: err.message || "Failed to remove favorite", variant: "destructive" });
+        } finally {
+            setRemovingId(null);
+        }
+    };
 
     if (!user) {
         return (
@@ -102,28 +120,49 @@ export default function FavoritesPage() {
                     )}
 
                     {!loading && !error && events.length > 0 && (
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {events.map((event) => (
-                                <Card key={event.id} className="overflow-hidden">
-                                    <CardContent className="p-6">
-                                        <div className="mb-4 flex items-center justify-between">
-                                            <span className="inline-block rounded-full bg-[#AC1212]/10 px-3 py-1 text-xs font-medium text-[#AC1212]">
+                                <Card key={event.id} className="group overflow-hidden border-none shadow-none bg-zinc-50/50 dark:bg-zinc-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-900/50 transition-colors">
+                                    <div className="aspect-[4/3] relative bg-muted flex items-center justify-center overflow-hidden rounded-2xl mb-3">
+                                        {event.image_url ? (
+                                            <img
+                                                src={`${API_BASE_URL}${event.image_url}`}
+                                                alt={event.title}
+                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                        ) : (
+                                            <Calendar className="h-10 w-10 text-muted-foreground/30" />
+                                        )}
+                                        <div className="absolute top-2.5 left-2.5">
+                                            <span className="bg-white/95 dark:bg-black/80 backdrop-blur-md text-[10px] font-black px-2.5 py-1 rounded-full text-black dark:text-white border border-zinc-200/50 dark:border-white/10 uppercase tracking-wider shadow-sm">
                                                 {event.category}
                                             </span>
-                                            <Heart className="h-5 w-5 fill-current text-red-500" />
                                         </div>
-                                        <h3 className="mb-2 text-xl font-semibold">{event.title}</h3>
-                                        <div className="space-y-2 text-sm text-muted-foreground">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="h-4 w-4" />
-                                                {formatDate(event.date)}
+                                        <button
+                                            className="absolute top-2.5 right-2.5 h-8 w-8 flex items-center justify-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm rounded-full shadow-sm text-red-500 border border-zinc-200 dark:border-zinc-800 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                            onClick={() => handleRemoveFavorite(event.id)}
+                                            disabled={removingId === event.id}
+                                        >
+                                            {removingId === event.id ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Heart className="h-4 w-4 fill-current" />
+                                            )}
+                                        </button>
+                                    </div>
+                                    <div className="px-1.5 pb-2 cursor-pointer" onClick={() => router.push(`/events/${event.id}`)}>
+                                        <h3 className="text-base font-bold line-clamp-1 mb-1 group-hover:text-[#AC1212] transition-colors">{event.title}</h3>
+                                        <div className="flex flex-col gap-1 text-[11px] font-medium text-muted-foreground">
+                                            <div className="flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100">
+                                                <Calendar className="h-3.5 w-3.5 text-[#AC1212]" />
+                                                <span>{formatDate(event.date)}</span>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <MapPin className="h-4 w-4" />
-                                                {event.location_venue || event.location || 'Location TBD'}
+                                            <div className="flex items-center gap-1.5 opacity-70">
+                                                <MapPin className="h-3.5 w-3.5" />
+                                                <span className="line-clamp-1">{event.location_venue || event.location || 'Location TBD'}</span>
                                             </div>
                                         </div>
-                                    </CardContent>
+                                    </div>
                                 </Card>
                             ))}
                         </div>

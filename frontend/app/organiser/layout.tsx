@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/components/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -82,9 +83,10 @@ function NavItem({ href, label, icon: Icon, isActive, badge, onClick }: { href: 
 }
 
 // Mobile Sidebar
-function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function MobileSidebar({ isOpen, onClose, onLogout }: { isOpen: boolean; onClose: () => void; onLogout: () => void }) {
     const pathname = usePathname()
     const { theme, toggleTheme } = useTheme()
+    const { user } = useAuth()
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
@@ -160,12 +162,12 @@ function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                         <div className="flex items-center gap-3 mb-3">
                             <Avatar className="h-10 w-10 border-2 border-border">
                                 <AvatarFallback className="bg-primary text-white font-medium">
-                                    OR
+                                    {user?.name?.substring(0, 2).toUpperCase() || 'OR'}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate">John Organiser</p>
-                                <p className="text-xs text-muted-foreground truncate">john@eventmate.com</p>
+                                <p className="text-sm font-semibold truncate">{user?.name || 'Organizer'}</p>
+                                <p className="text-xs text-muted-foreground truncate">{user?.email || 'email@example.com'}</p>
                             </div>
                         </div>
                         <div className="flex gap-2">
@@ -175,15 +177,14 @@ function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                     Profile
                                 </Button>
                             </Link>
-                            <Link href="/login" onClick={onClose}>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </Button>
-                            </Link>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                onClick={onLogout}
+                            >
+                                <LogOut className="w-4 h-4" />
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -193,9 +194,10 @@ function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
 }
 
 // Desktop Sidebar
-function DesktopSidebar() {
+function DesktopSidebar({ onLogout }: { onLogout: () => void }) {
     const pathname = usePathname()
     const { theme, toggleTheme } = useTheme()
+    const { user } = useAuth()
 
     return (
         <aside className="fixed top-0 left-0 z-40 h-screen w-64 bg-background border-r shadow-sm">
@@ -269,12 +271,12 @@ function DesktopSidebar() {
                     <div className="flex items-center gap-3 mb-3">
                         <Avatar className="h-10 w-10 border-2 border-border">
                             <AvatarFallback className="bg-primary text-white font-medium">
-                                OR
+                                {user?.name?.substring(0, 2).toUpperCase() || 'OR'}
                             </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate">John Organiser</p>
-                            <p className="text-xs text-muted-foreground truncate">john@eventmate.com</p>
+                            <p className="text-sm font-semibold truncate">{user?.name || 'Organizer'}</p>
+                            <p className="text-xs text-muted-foreground truncate">{user?.email || 'email@example.com'}</p>
                         </div>
                     </div>
                     <div className="flex gap-2">
@@ -284,15 +286,14 @@ function DesktopSidebar() {
                                 Profile
                             </Button>
                         </Link>
-                        <Link href="/login">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-                            >
-                                <LogOut className="w-4 h-4" />
-                            </Button>
-                        </Link>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                            onClick={onLogout}
+                        >
+                            <LogOut className="w-4 h-4" />
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -308,6 +309,16 @@ export default function OrganiserLayout({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
     const router = useRouter()
+    const { signOut } = useAuth()
+
+    const handleLogout = async () => {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        }
+        await signOut();
+        router.push('/');
+    };
 
     // Check if user is organizer - redirect if not
     useEffect(() => {
@@ -334,7 +345,7 @@ export default function OrganiserLayout({
                                 <Menu className="w-5 h-5" />
                             </Button>
                         </SheetTrigger>
-                        <MobileSidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+                        <MobileSidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} onLogout={handleLogout} />
                     </Sheet>
                     <Link href="/organiser" className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -353,7 +364,7 @@ export default function OrganiserLayout({
 
             {/* Desktop Sidebar */}
             <div className="hidden lg:block">
-                <DesktopSidebar />
+                <DesktopSidebar onLogout={handleLogout} />
             </div>
 
             {/* Main Content - with left padding for fixed sidebar */}

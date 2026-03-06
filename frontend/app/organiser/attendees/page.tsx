@@ -129,8 +129,8 @@ export default function OrganiserAttendeesPage() {
     }
 
     const formatCurrency = (amount: number | null) => {
-        if (amount === null || amount === undefined) return '$0.00';
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+        if (amount === null || amount === undefined) return 'ETB 0.00';
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ETB' }).format(amount);
     }
 
     const handleExport = async () => {
@@ -399,6 +399,37 @@ export default function OrganiserAttendeesPage() {
                                                             <TooltipContent>Check In</TooltipContent>
                                                         </Tooltip>
                                                     )}
+                                                    {attendee.status === 'Pending' && (
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className={`h-8 w-8 ${theme === "dark" ? "text-amber-400 hover:bg-slate-800" : "text-amber-600"}`}
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            // Confirmed means the payment is approved
+                                                                            await eventsApi.updateRegistrationStatus(attendee.id, 'Confirmed')
+                                                                            toast({ title: "Payment Approved", description: "Attendee registration has been confirmed." })
+                                                                            // Refresh data
+                                                                            const regRes = await eventsApi.getOrganizerRegistrations({
+                                                                                event_id: eventFilter !== 'all' ? eventFilter : undefined,
+                                                                                status: statusFilter !== 'all' ? statusFilter : undefined,
+                                                                                page: currentPage,
+                                                                                limit: ITEMS_PER_PAGE
+                                                                            })
+                                                                            setAttendees(regRes.data.registrations)
+                                                                        } catch (err: any) {
+                                                                            toast({ title: "Error", description: err.message || "Failed to approve payment", variant: "destructive" })
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <CheckCircle className="h-4 w-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Approve Payment</TooltipContent>
+                                                        </Tooltip>
+                                                    )}
                                                     {(attendee.status === 'Confirmed' || attendee.status === 'RSVPed' || attendee.status === 'Purchased') && (
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
@@ -514,6 +545,21 @@ export default function OrganiserAttendeesPage() {
                                         {selectedAttendee.status}
                                     </Badge>
                                 </div>
+                                {(selectedAttendee.payment_method || selectedAttendee.transaction_ref) && (
+                                    <>
+                                        <div className="col-span-2 mt-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                            <p className={`text-sm font-bold mb-3 ${theme === "dark" ? "text-slate-300" : "text-slate-700"}`}>Payment Details</p>
+                                        </div>
+                                        <div>
+                                            <p className={`text-xs uppercase tracking-widest font-bold ${theme === "dark" ? "text-slate-500" : "text-muted-foreground"}`}>Bank / Method</p>
+                                            <p className={`font-medium mt-1 ${theme === "dark" ? "text-slate-100" : ""}`}>{selectedAttendee.payment_method}</p>
+                                        </div>
+                                        <div>
+                                            <p className={`text-xs uppercase tracking-widest font-bold ${theme === "dark" ? "text-slate-500" : "text-muted-foreground"}`}>Transaction Ref</p>
+                                            <p className={`font-mono text-sm font-bold mt-1 text-[#AC1212]`}>{selectedAttendee.transaction_ref}</p>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}

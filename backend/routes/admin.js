@@ -490,4 +490,105 @@ router.patch('/reports/:id', async (req, res) => {
     }
 });
 
+/**
+ * GET /admin/registrations
+ * Get all registrations across all events (Admin)
+ */
+router.get('/registrations', async (req, res) => {
+    try {
+        const { event_id, status, user_id, page = 1, limit = 20 } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        const limitNum = parseInt(limit);
+
+        // Build queries based on filters - using simple string concatenation for dynamic query
+        let whereClause = '';
+        const conditions = [];
+
+        if (event_id) {
+            conditions.push(`r.event_id = ${parseInt(event_id)}`);
+        }
+        if (status) {
+            conditions.push(`r.status = '${status}'`);
+        }
+        if (user_id) {
+            conditions.push(`r.user_id = ${parseInt(user_id)}`);
+        }
+        if (conditions.length > 0) {
+            whereClause = 'WHERE ' + conditions.join(' AND ');
+        }
+
+        // Get total count
+        const countResult = await db.query(
+            `SELECT COUNT(*) FROM registrations r ${whereClause}`
+        );
+        const total = parseInt(countResult.rows[0].count);
+
+        // Get paginated data
+        const result = await db.query(
+            `SELECT r.*, r.payment_method, r.transaction_ref, r.timestamp as created_at, 
+                    e.title as event_title, e.date as event_date, e.time as event_time,
+                    u.name as user_name, u.email as user_email
+             FROM registrations r
+             JOIN events e ON r.event_id = e.id
+             JOIN users u ON r.user_id = u.id
+             ${whereClause}
+             ORDER BY r.timestamp DESC
+             LIMIT ${limitNum} OFFSET ${offset}`
+        );
+
+        res.json({
+            success: true,
+            data: {
+                registrations: result.rows,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    totalPages: Math.ceil(total / parseInt(limit))
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Get registrations error:', error);
+        res.status(500).json({ success: false, message: 'Error getting registrations' });
+    }
+});
+
+/**
+ * PATCH /admin/registrations/:id
+ * Update registration status (approve/reject payment)
+ */
+router.patch('/registrations/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        // Validate status
+        const validStatuses = ['Confirmed', 'Pending', 'Cancelled', 'Checked-In', 'RSVPed', 'Purchased'];
+        if (!status || !validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+            });
+        }
+
+        // Check if registration exists
+        const regCheck = await db.query('SELECT * FROM registrations WHERE id = $1', [id]);
+        if (regCheck.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Registration not found' });
+        }
+
+        // Update status
+        await db.query(
+            'UPDATE registrations SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [status, id]
+        );
+
+        res.json({ success: true, message: 'Registration status updated successfully' });
+    } catch (error) {
+        console.error('Update registration status error:', error);
+        res.status(500).json({ success: false, message: 'Error updating registration status' });
+    }
+});
+
 module.exports = router;

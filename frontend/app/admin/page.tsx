@@ -19,7 +19,7 @@ import {
     Users,
     Calendar,
     Ticket,
-    DollarSign,
+    Banknote,
     TrendingUp,
     TrendingDown,
     Eye,
@@ -290,7 +290,7 @@ export default function AdminDashboard() {
                                 <p className={`text-3xl font-bold ${theme === "dark" ? "text-slate-100" : ""}`}>{stats?.pending_events || 0}</p>
                             </div>
                             <div className="p-3 rounded-xl bg-orange-500/10">
-                                <DollarSign className="h-6 w-6 text-orange-500" />
+                                <Banknote className="h-6 w-6 text-orange-500" />
                             </div>
                         </div>
                     </CardContent>
@@ -447,3 +447,4 @@ export default function AdminDashboard() {
         </div>
     )
 }
+

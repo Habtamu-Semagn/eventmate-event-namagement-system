@@ -1,5 +1,5 @@
 // API base URL - configure this via NEXT_PUBLIC_API_URL environment variable in production
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Helper to get the auth token from localStorage
 function getToken(): string | null {
@@ -146,21 +146,23 @@ export interface Event {
     id: number;
     title: string;
     description: string;
+    category: string;
     date: string;
     time: string;
-    location_venue?: string;
-    location?: string;
-    city?: string;
-    country?: string;
-    category: string;
+    location_venue: string;
+    location_latitude?: number | null;
+    location_longitude?: number | null;
     organizer_id: number;
     organizer_name?: string;
-    status: string;
-    capacity?: number;
-    is_paid?: boolean;
+    status: 'Pending' | 'Approved' | 'Rejected';
+    capacity: number;
+    is_paid: boolean;
     image_url?: string;
-    ticket_categories?: any[];
+    city?: string;
+    country?: string;
     created_at: string;
+    updated_at: string;
+    registration_count?: number;
 }
 
 export interface EventsResponse {
@@ -312,9 +314,12 @@ export const eventsApi = {
         }),
 
     cancelRsvp: (eventId: number) =>
-        fetchApi<{ success: boolean }>(`/events/${eventId}/rsvp`, {
+        fetchApi<{ success: boolean }>(`/events/${eventId}/register`, {
             method: 'DELETE',
         }),
+
+    getTicketCategories: (eventId: number) =>
+        fetchApi<{ success: boolean; data: { categories: any[] } }>(`/events/${eventId}/ticket-categories`),
 
     uploadImage: (file: File) => {
         const formData = new FormData();
@@ -358,7 +363,7 @@ export const registrationsApi = {
             method: 'POST',
         }),
 
-    purchase: (eventId: number, data: { ticket_type: string, payment_method: string }) =>
+    purchase: (eventId: number, data: { ticket_category_id: number, payment_method: string }) =>
         fetchApi<{ success: boolean }>(`/events/${eventId}/purchase`, {
             method: 'POST',
             body: JSON.stringify(data),
@@ -566,4 +571,21 @@ export const adminApi = {
         const query = searchParams.toString();
         return fetchApi<{ success: boolean; data: { logs: any[]; pagination: any } }>(`/admin/logs${query ? `?${query}` : ''}`);
     },
+
+    getRegistrations: (params?: { page?: number; limit?: number; event_id?: number; status?: string; user_id?: number }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.page) searchParams.set('page', params.page.toString());
+        if (params?.limit) searchParams.set('limit', params.limit.toString());
+        if (params?.event_id) searchParams.set('event_id', params.event_id.toString());
+        if (params?.status) searchParams.set('status', params.status);
+        if (params?.user_id) searchParams.set('user_id', params.user_id.toString());
+        const query = searchParams.toString();
+        return fetchApi<{ success: boolean; data: { registrations: any[]; pagination: any } }>(`/admin/registrations${query ? `?${query}` : ''}`);
+    },
+
+    updateRegistrationStatus: (registrationId: number, status: string) =>
+        fetchApi<{ success: boolean }>(`/admin/registrations/${registrationId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status }),
+        }),
 };

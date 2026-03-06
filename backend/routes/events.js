@@ -54,31 +54,37 @@ router.post('/upload', authenticate, isOrganizer, upload.single('image'), (req, 
 
 /**
  * GET /events
+ * Public endpoint to browse and search events
+ * Query params: category, date, search, page, limit
+ */
+router.get('/', optionalAuth, async (req, res) => {
     try {
-        const { category, date, search, page = 1, limit = 20 } = req.query;
+        const { category, date, search, page = 1, limit = 12 } = req.query;
+        const limitNum = parseInt(limit) || 12;
+        const pageNum = parseInt(page) || 1;
 
         const conditions = ["e.status = 'Approved'"];
-        const values = [];
+        const filterValues = [];
         let paramCount = 1;
 
         // Filter by category
         if (category) {
             conditions.push(`e.category = $${paramCount}`);
-            values.push(category);
+            filterValues.push(category);
             paramCount++;
         }
 
         // Filter by date
         if (date) {
             conditions.push(`e.date = $${paramCount}`);
-            values.push(date);
+            filterValues.push(date);
             paramCount++;
         }
 
         // Search in title and description
         if (search) {
             conditions.push(`(e.title ILIKE $${paramCount} OR e.description ILIKE $${paramCount})`);
-            values.push(`%${search}%`);
+            filterValues.push(`%${search}%`);
             paramCount++;
         }
 
@@ -87,14 +93,16 @@ router.post('/upload', authenticate, isOrganizer, upload.single('image'), (req, 
         // Get total count
         const countResult = await db.query(
             `SELECT COUNT(*) FROM events e WHERE ${whereClause}`,
-            values
+            filterValues
         );
 
         const total = parseInt(countResult.rows[0].count);
 
         // Get paginated events
-        const offset = (page - 1) * limit;
-        values.push(limit, offset);
+        const offset = (pageNum - 1) * limitNum;
+        const queryValues = [...filterValues, limitNum, offset];
+        const limitParam = filterValues.length + 1;
+        const offsetParam = filterValues.length + 2;
 
         const result = await db.query(
             `SELECT e.*, u.name as organizer_name 
@@ -102,8 +110,8 @@ router.post('/upload', authenticate, isOrganizer, upload.single('image'), (req, 
              JOIN users u ON e.organizer_id = u.id
              WHERE ${whereClause}
              ORDER BY e.date ASC, e.time ASC
-             LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
-            values
+             LIMIT $${limitParam} OFFSET $${offsetParam}`,
+            queryValues
         );
 
         res.json({
@@ -111,10 +119,10 @@ router.post('/upload', authenticate, isOrganizer, upload.single('image'), (req, 
             data: {
                 events: result.rows,
                 pagination: {
-                    page: parseInt(page),
-                    limit: parseInt(limit),
+                    page: pageNum,
+                    limit: limitNum,
                     total,
-                    totalPages: Math.ceil(total / limit)
+                    totalPages: Math.ceil(total / limitNum)
                 }
             }
         });
@@ -182,7 +190,7 @@ router.get('/organizer/my-events', authenticate, isOrganizer, async (req, res) =
                     page: parseInt(page),
                     limit: parseInt(limit),
                     total,
-                    totalPages: Math.ceil(total / limit)
+                    totalPages: Math.ceil(total / parseInt(limit))
                 }
             }
         });
@@ -327,7 +335,7 @@ router.get('/organizer/registrations', authenticate, isOrganizer, async (req, re
                     page: parseInt(page),
                     limit: parseInt(limit),
                     total,
-                    totalPages: Math.ceil(total / limit)
+                    totalPages: Math.ceil(total / parseInt(limit))
                 }
             }
         });
@@ -493,7 +501,7 @@ router.get('/organizer/tickets', authenticate, isOrganizer, async (req, res) => 
                     page: parseInt(page),
                     limit: parseInt(limit),
                     total,
-                    totalPages: Math.ceil(total / limit)
+                    totalPages: Math.ceil(total / parseInt(limit))
                 }
             }
         });
@@ -564,6 +572,46 @@ router.get('/:id', optionalAuth, eventValidation.idParam, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error getting event details'
+        });
+    }
+});
+
+/**
+ * GET /events/:id/ticket-categories
+ * Get ticket categories for an event
+ */
+router.get('/:id/ticket-categories', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const eventResult = await db.query(
+            'SELECT * FROM events WHERE id = $1',
+            [id]
+        );
+
+        if (eventResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+
+        const categoriesResult = await db.query(
+            'SELECT * FROM ticket_categories WHERE event_id = $1 ORDER BY price ASC',
+            [id]
+        );
+
+        res.json({
+            success: true,
+            data: {
+                categories: categoriesResult.rows
+            }
+        });
+    } catch (error) {
+        console.error('Get ticket categories error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting ticket categories'
         });
     }
 });
@@ -770,7 +818,7 @@ router.put('/:id', authenticate, isOrganizer, async (req, res) => {
             `UPDATE events SET ${updates.join(', ')} 
              WHERE id = $${paramCount} 
              RETURNING *`,
-            values
+            queryValues
         );
 
         // Log event update

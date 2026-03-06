@@ -225,9 +225,9 @@ async function seed() {
             const organizerId = userMap[event.organizer];
 
             if (organizerId) {
-                await client.query(
+                const result = await client.query(
                     `INSERT INTO events (title, description, date, time, location_venue, category, capacity, organizer_id, is_paid, status)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT DO NOTHING`,
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT DO NOTHING RETURNING id`,
                     [
                         event.title,
                         event.description,
@@ -241,9 +241,23 @@ async function seed() {
                         event.status
                     ]
                 );
+
+                if (result.rows.length > 0 && event.is_paid) {
+                    const eventId = result.rows[0].id;
+                    // Add default ticket categories for paid events
+                    await client.query(
+                        `INSERT INTO ticket_categories (event_id, name, price, capacity)
+                         VALUES ($1, $2, $3, $4), ($1, $5, $6, $7)`,
+                        [
+                            eventId,
+                            'General Admission', 25.00, Math.floor(event.capacity * 0.8),
+                            'VIP', 75.00, Math.floor(event.capacity * 0.2)
+                        ]
+                    );
+                }
             }
         }
-        console.log('✓ Events seeded\n');
+        console.log('✓ Events and Ticket Categories seeded\n');
 
         // Get event IDs
         const eventsResult = await client.query('SELECT id, title FROM events');

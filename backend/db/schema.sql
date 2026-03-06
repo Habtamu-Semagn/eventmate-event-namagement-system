@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS registrations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     paid_amount DECIMAL(10, 2) DEFAULT 0.00,
     ticket_type VARCHAR(100),
+    payment_method VARCHAR(50),
+    transaction_ref VARCHAR(100),
     UNIQUE(user_id, event_id)
 );
 
