@@ -55,6 +55,7 @@ import {
 import { useAuth } from '@/components/AuthContext'
 import { eventsApi } from '@/lib/api'
 import { useToast } from '@/components/ui/use-toast'
+import LocationPicker from '@/components/LocationPicker'
 
 export default function OrganiserEventsPage() {
     const { theme } = useTheme()
@@ -464,7 +465,7 @@ export default function OrganiserEventsPage() {
 
             {/* Edit Event Dialog */}
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className={theme === "dark" ? "bg-slate-900 border-slate-700" : ""}>
+                <DialogContent className={`max-h-[90vh] overflow-y-auto ${theme === "dark" ? "bg-slate-900 border-slate-700" : ""}`}>
                     <DialogHeader>
                         <DialogTitle className={theme === "dark" ? "text-slate-100" : ""}>
                             Edit Event
@@ -526,6 +527,44 @@ export default function OrganiserEventsPage() {
                                     onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                                     className={`mt-1 ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <label className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Event Location</label>
+                                <p className="text-xs text-gray-500 mb-2">Click on the map to update the event location</p>
+                                <LocationPicker
+                                    latitude={editFormData.location_latitude}
+                                    longitude={editFormData.location_longitude}
+                                    onLocationSelect={(lat, lng) => {
+                                        setEditFormData({ 
+                                            ...editFormData, 
+                                            location_latitude: lat,
+                                            location_longitude: lng
+                                        });
+                                    }}
+                                    height="300px"
+                                />
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <div>
+                                        <label className="text-xs text-gray-500">Latitude</label>
+                                        <Input
+                                            type="number"
+                                            step="any"
+                                            value={editFormData.location_latitude || ''}
+                                            onChange={(e) => setEditFormData({ ...editFormData, location_latitude: parseFloat(e.target.value) })}
+                                            className={`text-sm ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500">Longitude</label>
+                                        <Input
+                                            type="number"
+                                            step="any"
+                                            value={editFormData.location_longitude || ''}
+                                            onChange={(e) => setEditFormData({ ...editFormData, location_longitude: parseFloat(e.target.value) })}
+                                            className={`text-sm ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                             <div className="space-y-3">
                                 <label className={`text-sm font-medium ${theme === "dark" ? "text-slate-400" : "text-muted-foreground"}`}>Event Image</label>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useTheme } from "@/components/theme-provider"
+import LocationPicker from "@/components/LocationPicker"
 import {
     Select,
     SelectContent,
@@ -56,6 +57,8 @@ export default function OrganiserCreateEventPage() {
         image_url: '',
         isFree: true,
         ticketCategories: [{ name: 'General Admission', price: '0', capacity: '100' }],
+        location_latitude: 9.0320,
+        location_longitude: 38.7469,
     })
 
     // Redirect if not organizer or admin
@@ -130,6 +133,8 @@ export default function OrganiserCreateEventPage() {
                 date: formData.date,
                 time: formData.time,
                 location_venue: formData.location,
+                location_latitude: formData.location_latitude,
+                location_longitude: formData.location_longitude,
                 city: formData.city,
                 country: formData.country,
                 image_url: formData.image_url,
@@ -439,6 +444,42 @@ export default function OrganiserCreateEventPage() {
                                     onChange={(e) => updateFormData('country', e.target.value)}
                                     className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}
                                 />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className={theme === "dark" ? "text-slate-300" : ""}>Select Location on Map</Label>
+                            <p className="text-sm text-gray-500 mb-2">Click on the map to set the exact location of your event</p>
+                            <LocationPicker
+                                latitude={formData.location_latitude}
+                                longitude={formData.location_longitude}
+                                onLocationSelect={(lat, lng) => {
+                                    updateFormData('location_latitude', lat);
+                                    updateFormData('location_longitude', lng);
+                                }}
+                                height="400px"
+                            />
+                            <div className="grid grid-cols-2 gap-4 mt-2">
+                                <div>
+                                    <Label className="text-xs text-gray-500">Latitude</Label>
+                                    <Input
+                                        type="number"
+                                        step="any"
+                                        value={formData.location_latitude}
+                                        onChange={(e) => updateFormData('location_latitude', parseFloat(e.target.value))}
+                                        className={`text-sm ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs text-gray-500">Longitude</Label>
+                                    <Input
+                                        type="number"
+                                        step="any"
+                                        value={formData.location_longitude}
+                                        onChange={(e) => updateFormData('location_longitude', parseFloat(e.target.value))}
+                                        className={`text-sm ${theme === "dark" ? "bg-slate-800 border-slate-700" : ""}`}
+                                    />
+                                </div>
                             </div>
                         </div>
 

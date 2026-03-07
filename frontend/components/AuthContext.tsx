@@ -39,6 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
         const loadUser = async () => {
             const token = localStorage.getItem('eventmate_token');
             if (token) {
+                // Ensure token is set in API module
+                setToken(token);
+                
                 try {
                     const response = await authApi.getCurrentUser();
                     const userInfo = response.data.user;
@@ -49,10 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
                         role: userInfo.role,
                         email: userInfo.email,
                     });
-                } catch (error) {
+                } catch (error: any) {
                     console.error('Failed to load user:', error);
-                    removeToken();
-                    removeUser();
+                    // Only remove token if it's a token-related error
+                    if (error.message === 'Token expired' || 
+                        error.message === 'Invalid token' || 
+                        error.message === 'No token provided') {
+                        removeToken();
+                        removeUser();
+                    }
+                    // For other errors (network, server), keep the token and try again later
                 }
             }
             setLoading(false);

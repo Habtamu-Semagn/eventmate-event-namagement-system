@@ -11,6 +11,7 @@ import { eventsApi, registrationsApi, Event, API_BASE_URL } from '@/lib/api';
 import { useAuth } from '@/components/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import CheckoutModal from '@/components/CheckoutModal';
+import LocationMap from '@/components/LocationMap';
 
 export default function EventDetailsPage() {
     const { id } = useParams();
@@ -36,6 +37,14 @@ export default function EventDetailsPage() {
 
                 setEvent(eventRes.data.event);
                 setCategories(catRes.data.categories);
+                
+                // Debug logging
+                console.log('Event data received:', eventRes.data.event);
+                console.log('Location coordinates:', {
+                    latitude: eventRes.data.event.location_latitude,
+                    longitude: eventRes.data.event.location_longitude,
+                    venue: eventRes.data.event.location_venue
+                });
             } catch (err: any) {
                 console.error('Failed to fetch event details:', err);
                 toast({
@@ -69,12 +78,12 @@ export default function EventDetailsPage() {
             await registrationsApi.register(event!.id);
             toast({
                 title: "Registration Successful",
-                description: "You've successfully registered for this event!",
-                variant: "success",
+                description: "Redirecting to your events...",
             });
-            // Refresh event to update reg count
-            const eventRes = await eventsApi.getById(event!.id);
-            setEvent(eventRes.data.event);
+            // Redirect to my-events page
+            setTimeout(() => {
+                router.push('/my-events');
+            }, 1000);
         } catch (err: any) {
             toast({
                 title: "Registration Failed",
@@ -209,6 +218,23 @@ export default function EventDetailsPage() {
                                     </div>
                                 </Card>
                             </section>
+
+                            {/* Location Map */}
+                            {event.location_latitude && event.location_longitude && (
+                                <section>
+                                    <h2 className="text-2xl font-black mb-6 flex items-center gap-3">
+                                        <MapPin className="h-6 w-6 text-[#AC1212]" /> Event Location
+                                    </h2>
+                                    <div className="w-full" style={{ height: '400px' }}>
+                                        <LocationMap
+                                            latitude={parseFloat(String(event.location_latitude))}
+                                            longitude={parseFloat(String(event.location_longitude))}
+                                            locationName={event.location_venue}
+                                            height="400px"
+                                        />
+                                    </div>
+                                </section>
+                            )}
 
                             <section>
                                 <h2 className="text-2xl font-black mb-6">Organizer Details</h2>

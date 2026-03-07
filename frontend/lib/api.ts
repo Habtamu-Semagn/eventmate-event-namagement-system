@@ -57,10 +57,22 @@ async function fetchApi<T>(
 
     // Handle 401 - Unauthorized
     if (response.status === 401) {
-        removeToken();
-        if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+        const data = await response.json().catch(() => ({ message: 'Unauthorized' }));
+        
+        // Only remove token and redirect if it's a token-related issue
+        if (data.message === 'Token expired' || 
+            data.message === 'Invalid token' || 
+            data.message === 'No token provided') {
+            removeToken();
+            removeUser();
+            if (typeof window !== 'undefined') {
+                window.location.href = '/login';
+            }
         }
+        
+        const error: any = new Error(data.message || 'Unauthorized');
+        error.errors = data.errors;
+        throw error;
     }
 
     const data = await response.json();
@@ -334,10 +346,19 @@ export const eventsApi = {
             method: 'POST',
             headers,
             body: formData,
-        }).then(res => {
+        }).then(async res => {
             if (res.status === 401) {
-                removeToken();
-                if (typeof window !== 'undefined') window.location.href = '/login';
+                const data = await res.json().catch(() => ({ message: 'Unauthorized' }));
+                
+                // Only remove token and redirect if it's a token-related issue
+                if (data.message === 'Token expired' || 
+                    data.message === 'Invalid token' || 
+                    data.message === 'No token provided') {
+                    removeToken();
+                    removeUser();
+                    if (typeof window !== 'undefined') window.location.href = '/login';
+                }
+                throw new Error(data.message || 'Unauthorized');
             }
             return res.json();
         }) as Promise<{ success: boolean; data: { imageUrl: string } }>;

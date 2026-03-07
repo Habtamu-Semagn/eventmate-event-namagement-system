@@ -16,7 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 const categories = ['All', 'Technology', 'Music', 'Art', 'Business', 'Food', 'Sports'];
 
 function EventsList() {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
     const searchParams = useSearchParams();
@@ -31,13 +31,6 @@ function EventsList() {
     const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, totalPages: 0 });
     const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
     const [togglingFavorite, setTogglingFavorite] = useState<number | null>(null);
-
-    // Redirect to login when user logs out
-    useEffect(() => {
-        if (!user) {
-            router.push('/login');
-        }
-    }, [user, router]);
 
     // Update search query when URL param changes
     useEffect(() => {
@@ -218,56 +211,60 @@ function EventsList() {
                     )}
 
                     {!loading && !error && events.length > 0 && (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {events.map((event) => (
-                                <Card key={event.id} className="group overflow-hidden border-none shadow-none bg-zinc-50/50 dark:bg-zinc-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-900/50 transition-colors">
-                                    <div className="aspect-[4/3] relative bg-muted flex items-center justify-center overflow-hidden rounded-2xl mb-3">
+                                <Card key={event.id} className="group overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300 bg-white rounded-lg">
+                                    <div className="aspect-[4/3] relative bg-gray-100 flex items-center justify-center overflow-hidden">
                                         {event.image_url ? (
                                             <img
                                                 src={`${API_BASE_URL}${event.image_url}`}
                                                 alt={event.title}
-                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                             />
                                         ) : (
-                                            <Calendar className="h-10 w-10 text-muted-foreground/30" />
+                                            <Calendar className="h-12 w-12 text-gray-300" />
                                         )}
-                                        <div className="absolute top-2.5 left-2.5">
-                                            <span className="bg-white/95 dark:bg-black/80 backdrop-blur-md text-[10px] font-black px-2.5 py-1 rounded-full text-black dark:text-white border border-zinc-200/50 dark:border-white/10 uppercase tracking-wider shadow-sm">
+                                        
+                                        <div className="absolute top-3 left-3">
+                                            <span className="bg-white/95 backdrop-blur-sm text-[10px] font-bold px-3 py-1.5 rounded-full text-gray-700 uppercase tracking-wider shadow-sm">
                                                 {event.category}
                                             </span>
                                         </div>
                                         <button
-                                            className={`absolute top-2.5 right-2.5 h-8 w-8 flex items-center justify-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm rounded-full shadow-sm border border-zinc-200 dark:border-zinc-800 transition-colors ${favoriteIds.includes(event.id) ? 'text-red-500' : 'text-zinc-400 hover:text-red-500'
-                                                }`}
+                                            className={`absolute top-3 right-3 h-9 w-9 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm transition-all duration-200 hover:scale-110 ${
+                                                favoriteIds.includes(event.id) ? 'text-[#DC143C]' : 'text-gray-400 hover:text-[#DC143C]'
+                                            }`}
                                             onClick={() => handleToggleFavorite(event.id)}
                                             disabled={togglingFavorite === event.id}
                                         >
                                             {togglingFavorite === event.id ? (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                             ) : (
-                                                <Heart className={`h-4 w-4 ${favoriteIds.includes(event.id) ? 'fill-current' : ''}`} />
+                                                <Heart className={`h-4.5 w-4.5 ${favoriteIds.includes(event.id) ? 'fill-current' : ''}`} />
                                             )}
                                         </button>
                                     </div>
-                                    <div className="px-1.5 pb-2">
-                                        <div className="cursor-pointer" onClick={() => router.push(`/events/${event.id}`)}>
-                                            <h3 className="text-base font-bold line-clamp-1 mb-1 group-hover:text-[#AC1212] transition-colors">{event.title}</h3>
-                                            <div className="flex flex-col gap-1 text-[11px] font-medium text-muted-foreground">
-                                                <div className="flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100">
-                                                    <Calendar className="h-3.5 w-3.5 text-[#AC1212]" />
-                                                    <span>{new Date(event.date).toLocaleDateString()} • {event.time}</span>
+                                    <div className="p-5 space-y-4">
+                                        <div className="cursor-pointer space-y-3" onClick={() => router.push(`/events/${event.id}`)}>
+                                            <h3 className="text-lg font-bold line-clamp-2 text-gray-900 group-hover:text-[#DC143C] transition-colors leading-snug">
+                                                {event.title}
+                                            </h3>
+                                            <div className="flex flex-col gap-2 text-sm text-gray-600">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                                    <span>{new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • {event.time}</span>
                                                 </div>
-                                                <div className="flex items-center gap-1.5 opacity-70">
-                                                    <MapPin className="h-3.5 w-3.5" />
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
                                                     <span className="line-clamp-1">{event.location_venue || 'Location TBD'}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <Button
-                                            className="w-full mt-3 h-8 text-[11px] font-bold bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-[#AC1212] hover:text-white hover:border-[#AC1212] dark:hover:bg-[#AC1212] dark:hover:border-[#AC1212] transition-all rounded-lg"
+                                            className="w-full h-11 text-sm font-bold bg-[#DC143C] text-white hover:bg-[#B01030] transition-all duration-200 border-0 rounded-none uppercase tracking-wide shadow-sm hover:shadow-md cursor-pointer"
                                             onClick={() => router.push(`/events/${event.id}`)}
                                         >
-                                            {event.is_paid ? 'Buy Tickets' : 'Register'}
+                                            Book Now
                                         </Button>
                                     </div>
                                 </Card>

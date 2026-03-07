@@ -632,7 +632,8 @@ router.post('/', authenticate, isOrganizer, eventValidation.create, async (req, 
             location_latitude,
             location_longitude,
             capacity,
-            is_paid
+            is_paid,
+            image_url
         } = req.body;
 
         // Insert event with Pending status (BR-03)
@@ -640,8 +641,8 @@ router.post('/', authenticate, isOrganizer, eventValidation.create, async (req, 
             `INSERT INTO events (
                 title, description, category, date, time,
                 location_venue, location_latitude, location_longitude,
-                organizer_id, status, capacity, is_paid
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Pending', $10, $11)
+                organizer_id, status, capacity, is_paid, image_url
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Pending', $10, $11, $12)
             RETURNING *`,
             [
                 title,
@@ -654,7 +655,8 @@ router.post('/', authenticate, isOrganizer, eventValidation.create, async (req, 
                 location_longitude,
                 req.user.id,
                 capacity || 0,
-                is_paid || false
+                is_paid || false,
+                image_url || null
             ]
         );
 
@@ -785,7 +787,7 @@ router.put('/:id', authenticate, isOrganizer, async (req, res) => {
         const allowedFields = [
             'title', 'description', 'category', 'date', 'time',
             'location_venue', 'location_latitude', 'location_longitude',
-            'capacity', 'is_paid'
+            'capacity', 'is_paid', 'image_url'
         ];
 
         const updates = [];
@@ -818,7 +820,7 @@ router.put('/:id', authenticate, isOrganizer, async (req, res) => {
             `UPDATE events SET ${updates.join(', ')} 
              WHERE id = $${paramCount} 
              RETURNING *`,
-            queryValues
+            values
         );
 
         // Log event update
@@ -1121,6 +1123,231 @@ router.post('/:id/purchase', authenticate, registrationValidation.purchase, asyn
         res.status(500).json({
             success: false,
             message: 'Error purchasing ticket'
+        });
+    }
+});
+
+/**
+ * POST /events/:id/register
+ * Register for an event (free events) or RSVP
+ */
+router.post('/:id/register', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if event exists and is approved
+        const eventCheck = await db.query(
+            'SELECT * FROM events WHERE id = $1 AND status = $2',
+            [id, 'Approved']
+        );
+
+        if (eventCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found or not approved'
+            });
+        }
+
+        const event = eventCheck.rows[0];
+
+        // Check if already registered
+        const existingReg = await db.query(
+            'SELECT id FROM registrations WHERE user_id = $1 AND event_id = $2',
+            [req.user.id, id]
+        );
+
+        if (existingReg.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'You are already registered for this event'
+            });
+        }
+
+        // Check capacity
+        if (event.capacity > 0) {
+            const regCountResult = await db.query(
+                'SELECT COUNT(*) FROM registrations WHERE event_id = $1',
+                [id]
+            );
+            const currentCount = parseInt(regCountResult.rows[0].count);
+            
+            if (currentCount >= event.capacity) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Event is at full capacity'
+                });
+            }
+        }
+
+        // Register user
+        const status = event.is_paid ? 'Pending' : 'RSVPed';
+        await db.query(
+            'INSERT INTO registrations (user_id, event_id, status) VALUES ($1, $2, $3)',
+            [req.user.id, id, status]
+        );
+
+        // Log registration
+        await logger.log({
+            userId: req.user.id,
+            action: 'Register for event',
+            entityType: 'registration',
+            entityId: id,
+            details: { eventTitle: event.title, status },
+            ipAddress: req.ip || req.connection.remoteAddress
+        });
+
+        res.status(201).json({
+            success: true,
+            message: event.is_paid ? 'Registration pending payment' : 'Successfully registered for event'
+        });
+    } catch (error) {
+        console.error('Register for event error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error registering for event'
+        });
+    }
+});
+
+/**
+ * DELETE /events/:id/register
+ * Cancel registration for an event
+ */
+router.delete('/:id/register', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if registration exists
+        const regCheck = await db.query(
+            'SELECT * FROM registrations WHERE user_id = $1 AND event_id = $2',
+            [req.user.id, id]
+        );
+
+        if (regCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Registration not found'
+            });
+        }
+
+        // Delete registration (cascades to tickets)
+        await db.query(
+            'DELETE FROM registrations WHERE user_id = $1 AND event_id = $2',
+            [req.user.id, id]
+        );
+
+        // Log cancellation
+        await logger.log({
+            userId: req.user.id,
+            action: 'Cancel event registration',
+            entityType: 'registration',
+            entityId: id,
+            details: {},
+            ipAddress: req.ip || req.connection.remoteAddress
+        });
+
+        res.json({
+            success: true,
+            message: 'Registration cancelled successfully'
+        });
+    } catch (error) {
+        console.error('Cancel registration error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error cancelling registration'
+        });
+    }
+});
+
+/**
+ * POST /events/:id/favorite
+ * Add an event to favorites
+ */
+router.post('/:id/favorite', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if event exists
+        const eventCheck = await db.query(
+            'SELECT id FROM events WHERE id = $1',
+            [id]
+        );
+
+        if (eventCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+
+        // Check if already favorited
+        const existingFav = await db.query(
+            'SELECT id FROM favorites WHERE user_id = $1 AND event_id = $2',
+            [req.user.id, id]
+        );
+
+        if (existingFav.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Event already in favorites'
+            });
+        }
+
+        // Add to favorites
+        await db.query(
+            'INSERT INTO favorites (user_id, event_id) VALUES ($1, $2)',
+            [req.user.id, id]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Event added to favorites'
+        });
+    } catch (error) {
+        console.error('Add favorite error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error adding favorite'
+        });
+    }
+});
+
+/**
+ * DELETE /events/:id/favorite
+ * Remove an event from favorites
+ */
+router.delete('/:id/favorite', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if favorite exists
+        const existingFav = await db.query(
+            'SELECT id FROM favorites WHERE user_id = $1 AND event_id = $2',
+            [req.user.id, id]
+        );
+
+        if (existingFav.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Favorite not found'
+            });
+        }
+
+        // Remove from favorites
+        await db.query(
+            'DELETE FROM favorites WHERE user_id = $1 AND event_id = $2',
+            [req.user.id, id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Event removed from favorites'
+        });
+    } catch (error) {
+        console.error('Remove favorite error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error removing favorite'
         });
     }
 });
