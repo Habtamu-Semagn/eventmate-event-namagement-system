@@ -50,7 +50,6 @@ const sidebarItems: SidebarItem[] = [
     { icon: Ticket, label: "Registrations", href: "/admin/registrations" },
     { icon: Users, label: "Users", href: "/admin/users", badge: "1.2k" },
     { icon: Bell, label: "Notifications", href: "/admin/notifications" },
-    { icon: FileText, label: "Content", href: "/admin/content" },
     { icon: History, label: "Audit Trail", href: "/admin/audit" },
 ]
 

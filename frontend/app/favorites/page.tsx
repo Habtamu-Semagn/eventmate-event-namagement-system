@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthContext';
-import Navbar from '@/components/Navbar';
+import AuthNavbar from '@/components/AuthNavbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Calendar, MapPin, Heart, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { favoritesApi, API_BASE_URL } from '@/lib/api';
@@ -14,12 +14,19 @@ import { useToast } from '@/components/ui/use-toast';
 
 export default function FavoritesPage() {
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [removingId, setRemovingId] = useState<number | null>(null);
+
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/login');
+        }
+    }, [user, authLoading, router]);
 
     useEffect(() => {
         const fetchFavorites = async () => {
@@ -53,21 +60,22 @@ export default function FavoritesPage() {
         }
     };
 
-    if (!user) {
+    // Show loading while checking authentication
+    if (authLoading) {
         return (
             <div className="flex min-h-screen flex-col">
-                <Navbar />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-4">Please sign in to view your favorites</h2>
-                        <Button asChild className="bg-[#AC1212] hover:bg-[#8a0f0f]">
-                            <a href="/login">Sign In</a>
-                        </Button>
-                    </div>
+                <AuthNavbar />
+                <main className="flex-1 flex items-center justify-center mt-16">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-crimson mx-auto"></div>
                 </main>
                 <Footer />
             </div>
         );
+    }
+
+    // Don't render if not authenticated
+    if (!user) {
+        return null;
     }
 
     const formatDate = (dateStr: string) => {
@@ -80,8 +88,8 @@ export default function FavoritesPage() {
 
     return (
         <div className="flex min-h-screen flex-col">
-            <Navbar />
-            <main className="flex-1 py-8">
+            <AuthNavbar />
+            <main className="flex-1 py-8 mt-16">
                 <div className="container mx-auto px-4">
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold">Saved Events</h1>
@@ -90,7 +98,7 @@ export default function FavoritesPage() {
 
                     {loading && (
                         <div className="text-center py-12">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#AC1212] mx-auto"></div>
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-crimson mx-auto"></div>
                             <p className="mt-4 text-muted-foreground">Loading your favorites...</p>
                         </div>
                     )}
@@ -113,8 +121,8 @@ export default function FavoritesPage() {
                             <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                             <h2 className="text-xl font-semibold mb-2">No saved events</h2>
                             <p className="text-muted-foreground mb-4">Save events you are interested in to see them here</p>
-                            <Button asChild className="bg-[#AC1212] hover:bg-[#8a0f0f]">
-                                <Link href="/">Explore Events</Link>
+                            <Button asChild className="bg-crimson hover:bg-crimson-dark">
+                                <Link href="/events">Explore Events</Link>
                             </Button>
                         </div>
                     )}
@@ -151,10 +159,10 @@ export default function FavoritesPage() {
                                         </button>
                                     </div>
                                     <div className="px-1.5 pb-2 cursor-pointer" onClick={() => router.push(`/events/${event.id}`)}>
-                                        <h3 className="text-base font-bold line-clamp-1 mb-1 group-hover:text-[#AC1212] transition-colors">{event.title}</h3>
+                                        <h3 className="text-base font-bold line-clamp-1 mb-1 group-hover:text-crimson transition-colors">{event.title}</h3>
                                         <div className="flex flex-col gap-1 text-[11px] font-medium text-muted-foreground">
                                             <div className="flex items-center gap-1.5 text-zinc-900 dark:text-zinc-100">
-                                                <Calendar className="h-3.5 w-3.5 text-[#AC1212]" />
+                                                <Calendar className="h-3.5 w-3.5 text-crimson" />
                                                 <span>{formatDate(event.date)}</span>
                                             </div>
                                             <div className="flex items-center gap-1.5 opacity-70">

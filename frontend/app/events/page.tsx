@@ -2,13 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+import AuthNavbar from '@/components/AuthNavbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, MapPin, Users, Search, Heart, Loader2 } from 'lucide-react';
-import { eventsApi, registrationsApi, favoritesApi, Event, API_BASE_URL } from '@/lib/api';
+import { Card } from '@/components/ui/card';
+import { Calendar, MapPin, Search, Heart, Loader2 } from 'lucide-react';
+import { eventsApi, favoritesApi, Event, API_BASE_URL } from '@/lib/api';
 import { useAuth } from '@/components/AuthContext';
 import { useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
@@ -26,11 +26,17 @@ function EventsList() {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [registeringEventId, setRegisteringEventId] = useState<number | null>(null);
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, totalPages: 0 });
     const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
     const [togglingFavorite, setTogglingFavorite] = useState<number | null>(null);
+
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/login');
+        }
+    }, [user, authLoading, router]);
 
     // Update search query when URL param changes
     useEffect(() => {
@@ -114,35 +120,10 @@ function EventsList() {
         return () => clearTimeout(timeoutId);
     }, [selectedCategory, searchQuery, page]);
 
-    const handleRegister = async (eventId: number) => {
-        if (!user) {
-            window.location.href = '/login';
-            return;
-        }
-
-        try {
-            setRegisteringEventId(eventId);
-            await registrationsApi.register(eventId);
-            toast({
-                title: "Registration Successful",
-                description: "You have successfully registered for the event!",
-                variant: "success",
-            });
-        } catch (err: any) {
-            toast({
-                title: "Registration Failed",
-                description: err.message || "Failed to register for event",
-                variant: "destructive",
-            });
-        } finally {
-            setRegisteringEventId(null);
-        }
-    };
-
     return (
         <div className="flex min-h-screen flex-col">
-            <Navbar />
-            <main className="flex-1 py-8">
+            <AuthNavbar />
+            <main className="flex-1 py-8 mt-16">{/* Added mt-16 for navbar spacing */}
                 <div className="container mx-auto px-4">
                     {/* Header */}
                     <div className="mb-8">
@@ -307,9 +288,9 @@ export default function EventsPage() {
     return (
         <Suspense fallback={
             <div className="flex min-h-screen flex-col">
-                <Navbar />
-                <main className="flex-1 flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-[#AC1212]" />
+                <AuthNavbar />
+                <main className="flex-1 flex items-center justify-center mt-16">
+                    <Loader2 className="h-8 w-8 animate-spin text-crimson" />
                 </main>
                 <Footer />
             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+import AuthNavbar from '@/components/AuthNavbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -98,8 +98,8 @@ export default function EventDetailsPage() {
     if (loading) {
         return (
             <div className="flex min-h-screen flex-col">
-                <Navbar />
-                <main className="flex-1 flex items-center justify-center">
+                <AuthNavbar />
+                <main className="flex-1 flex items-center justify-center mt-16">
                     <Loader2 className="h-10 w-10 animate-spin text-[#AC1212]" />
                 </main>
                 <Footer />
@@ -110,8 +110,8 @@ export default function EventDetailsPage() {
     if (!event) {
         return (
             <div className="flex min-h-screen flex-col">
-                <Navbar />
-                <main className="flex-1 container mx-auto px-4 py-12 text-center">
+                <AuthNavbar />
+                <main className="flex-1 container mx-auto px-4 py-12 text-center mt-16">
                     <h1 className="text-2xl font-bold mb-4">Event not found</h1>
                     <Button onClick={() => router.push('/events')}>Back to Events</Button>
                 </main>
@@ -122,8 +122,8 @@ export default function EventDetailsPage() {
 
     return (
         <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
-            <Navbar />
-            <main className="flex-1 pb-20">
+            <AuthNavbar />
+            <main className="flex-1 pb-20 mt-16">
                 {/* Hero Section */}
                 <div className="relative h-[40vh] md:h-[50vh] overflow-hidden bg-zinc-900">
                     {event.image_url ? (

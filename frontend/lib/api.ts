@@ -320,6 +320,17 @@ export const eventsApi = {
         );
     },
 
+    updateTicketCategory: (ticketId: number, data: { name: string; price: string; capacity: string }) =>
+        fetchApi<{ success: boolean; message: string }>(`/events/ticket-categories/${ticketId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+
+    deleteTicketCategory: (ticketId: number) =>
+        fetchApi<{ success: boolean; message: string }>(`/events/ticket-categories/${ticketId}`, {
+            method: 'DELETE',
+        }),
+
     rsvp: (eventId: number) =>
         fetchApi<{ success: boolean }>(`/events/${eventId}/rsvp`, {
             method: 'POST',

@@ -1,169 +1,139 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Menu, X, Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/components/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-    Search,
-    Bell,
-    MessageCircle,
-    User,
-    LogOut,
-    Heart,
-    Calendar,
-    Check,
-    LayoutDashboard,
-    BarChart3
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import NotificationBell from '@/components/NotificationBell';
+import { usePathname } from 'next/navigation';
 
-export default function Navbar() {
-    const { user, userData, signOut } = useAuth();
-    const router = useRouter();
-    const [searchQuery, setSearchQuery] = useState('');
+const Navbar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  
+  // Check if we're on the landing page
+  const isLandingPage = pathname === '/';
+  // Check if we're on auth pages (login/register)
+  const isAuthPage = pathname === '/login' || pathname === '/register';
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (searchQuery.trim()) {
-            router.push(`/events?search=${encodeURIComponent(searchQuery.trim())}`);
-        }
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
     };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-    const handleSignOut = async () => {
-        await signOut();
-        router.push('/');
-    };
+  // Navigation links - use hash links on landing page, simple links on auth pages, route links elsewhere
+  const navLinks = isLandingPage ? [
+    { name: 'Home', href: '#home' },
+    { name: 'Services', href: '#services' },
+    { name: 'Events', href: '#events' },
+    { name: 'Gallery', href: '#gallery' },
+    { name: 'Contact', href: '#contact' },
+  ] : isAuthPage ? [
+    { name: 'Home', href: '/#home' },
+    { name: 'Services', href: '/#services' },
+    { name: 'Events', href: '/#events' },
+    { name: 'Gallery', href: '/#gallery' },
+    { name: 'Contact', href: '/#contact' },
+  ] : [
+    { name: 'Home', href: '/' },
+    { name: 'Events', href: '/events' },
+    { name: 'My Events', href: '/my-events' },
+    { name: 'Favorites', href: '/favorites' },
+  ];
 
-    const getInitials = (name: string) => {
-        return name
-            .split(' ')
-            .map((n) => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-    };
+  return (
+    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled || isAuthPage ? 'glass-nav py-3' : isLandingPage ? 'bg-transparent py-5' : 'glass-nav py-3'}`}>
+      <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-10 h-10 bg-crimson rounded-lg flex items-center justify-center shadow-lg shadow-crimson/20">
+            <Calendar className="text-white w-6 h-6" />
+          </div>
+          <span className={`text-xl font-extrabold tracking-tighter font-display ${scrolled || !isLandingPage ? 'text-slate-900' : 'text-white'}`}>
+            Event<span className="text-crimson">Mate</span>
+          </span>
+        </Link>
 
-    return (
-        <nav className="sticky top-0 z-50 flex h-16 items-center justify-between bg-background px-4 md:px-6 lg:px-8 shadow-sm border-b border-border">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-                <Link href="/" className="cursor-pointer">
-                    <h1 className="text-xl md:text-2xl font-bold text-foreground">
-                        Event<span className="text-[#AC1212]">Mate</span>
-                    </h1>
-                </Link>
-            </div>
+        {/* Desktop Menu */}
+        <div className="hidden md:flex items-center gap-8">
+          {navLinks.map((link) => (
+            isLandingPage && link.href.startsWith('#') ? (
+              <a
+                key={link.name}
+                href={link.href}
+                className={`text-sm font-medium transition-colors ${scrolled || isAuthPage ? 'text-slate-900 hover:text-crimson' : 'text-white hover:text-crimson'}`}
+              >
+                {link.name}
+              </a>
+            ) : (
+              <Link
+                key={link.name}
+                href={link.href}
+                className={`text-sm font-medium transition-colors ${scrolled || !isLandingPage ? 'text-slate-900 hover:text-crimson' : 'text-white hover:text-crimson'}`}
+              >
+                {link.name}
+              </Link>
+            )
+          ))}
+          <Link href='/register'>
+            <button className={`px-5 py-2 rounded-none border-2 font-semibold text-sm transition-all duration-300 cursor-pointer ${scrolled || !isLandingPage ? 'border-crimson text-crimson hover:bg-crimson hover:text-white' : 'border-white text-white hover:bg-white hover:text-crimson'}`}>
+              Sign Up
+            </button>
+          </Link>
+        </div>
 
-            {/* Search Bar - Hidden on small screens */}
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xs lg:max-w-md mx-4">
-                <div className="relative w-full">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder="Search events..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-[#AC1212]"
-                    />
-                </div>
-            </form>
+        {/* Mobile Toggle */}
+        <div className="md:hidden">
+          <button onClick={() => setIsOpen(!isOpen)} className={scrolled || !isLandingPage ? 'text-slate-900' : 'text-white'}>
+            {isOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
+      </div>
 
-            {/* Main Navigation Links - Visible on Desktop */}
-            {user && (
-                <div className="hidden xl:flex items-center gap-0.5">
-                    <Button variant="ghost" asChild className="text-muted-foreground hover:text-[#AC1212] hover:bg-muted px-2">
-                        <Link href="/my-events" className="flex items-center gap-1.5">
-                            <Calendar className="h-4 w-4" />
-                            <span className="text-sm">My Events</span>
-                        </Link>
-                    </Button>
-                    <Button variant="ghost" asChild className="text-muted-foreground hover:text-[#AC1212] hover:bg-muted px-2">
-                        <Link href="/favorites" className="flex items-center gap-1.5">
-                            <Heart className="h-4 w-4" />
-                            <span className="text-sm">Favorites</span>
-                        </Link>
-                    </Button>
-                    <Button variant="ghost" asChild className="text-muted-foreground hover:text-[#AC1212] hover:bg-muted px-2">
-                        <Link href="/profile" className="flex items-center gap-1.5">
-                            <User className="h-4 w-4" />
-                            <span className="text-sm">Profile</span>
-                        </Link>
-                    </Button>
-                    {(userData?.role === 'Organizer' || userData?.role === 'Administrator') && (
-                        <Button variant="ghost" asChild className="text-muted-foreground hover:text-[#AC1212] hover:bg-muted px-2">
-                            <Link href="/organiser" className="flex items-center gap-1.5">
-                                <LayoutDashboard className="h-4 w-4" />
-                                <span className="text-sm">Organizer</span>
-                            </Link>
-                        </Button>
-                    )}
-                    {userData?.role === 'Administrator' && (
-                        <Button variant="ghost" asChild className="text-muted-foreground hover:text-[#AC1212] hover:bg-muted px-2">
-                            <Link href="/admin" className="flex items-center gap-1.5">
-                                <BarChart3 className="h-4 w-4" />
-                                <span className="text-sm">Admin</span>
-                            </Link>
-                        </Button>
-                    )}
-                </div>
-            )}
-
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-1">
-                {/* Mobile Search Icon */}
-                <Button variant="ghost" size="icon" className="md:hidden text-muted-foreground">
-                    <Search className="h-5 w-5" />
-                </Button>
-
-                {/* Notification Bell */}
-                <NotificationBell />
-
-                {/* Messages */}
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-[#AC1212]">
-                    <MessageCircle className="h-5 w-5" />
-                </Button>
-
-                {/* User Menu - Simplified */}
-                {user ? (
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" onClick={handleSignOut} className="text-muted-foreground hover:text-red-600 hidden sm:flex">
-                            <LogOut className="h-4 w-4 mr-1" />
-                            <span className="text-sm">Logout</span>
-                        </Button>
-                        <Button variant="ghost" onClick={handleSignOut} className="text-muted-foreground hover:text-red-600 sm:hidden p-2">
-                            <LogOut className="h-5 w-5" />
-                        </Button>
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src="" alt={userData?.displayName || 'User'} />
-                            <AvatarFallback className="bg-[#AC1212] text-white text-sm">
-                                {userData?.displayName ? getInitials(userData.displayName) : 'U'}
-                            </AvatarFallback>
-                        </Avatar>
-                    </div>
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden bg-white border-b border-slate-100 overflow-hidden"
+          >
+            <div className="flex flex-col p-6 gap-4">
+              {navLinks.map((link) => (
+                isLandingPage && link.href.startsWith('#') ? (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className="text-lg font-medium hover:text-crimson"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {link.name}
+                  </a>
                 ) : (
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" asChild className="text-muted-foreground hover:text-[#AC1212]">
-                            <Link href="/login">Sign In</Link>
-                        </Button>
-                        <Button asChild className="bg-[#AC1212] hover:bg-[#8a0f0f]">
-                            <Link href="/register">Sign Up</Link>
-                        </Button>
-                    </div>
-                )}
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="text-lg font-medium hover:text-crimson"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {link.name}
+                  </Link>
+                )
+              ))}
+              <Link href='/register'>
+                <button className="w-full py-3 rounded-none bg-crimson text-white font-bold mt-2 cursor-pointer">
+                  Sign Up
+                </button>
+              </Link>
             </div>
-        </nav>
-    );
-}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
+  );
+};
+
+export default Navbar;

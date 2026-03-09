@@ -307,7 +307,6 @@ export default function OrganiserLayout({
     children: React.ReactNode
 }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-    const [mounted, setMounted] = useState(false)
     const router = useRouter()
     const { signOut } = useAuth()
 
@@ -325,14 +324,8 @@ export default function OrganiserLayout({
         const user = getUser();
         if (!user || user.role !== 'Organizer') {
             router.push('/');
-            return;
         }
-        setMounted(true)
     }, [router])
-
-    if (!mounted) {
-        return null
-    }
 
     return (
         <div className="min-h-screen bg-muted/50">

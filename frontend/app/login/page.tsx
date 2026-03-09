@@ -98,12 +98,12 @@ export default function LoginPage() {
                             </div>
                         </CardContent>
                         <CardFooter className="flex flex-col space-y-4">
-                            <Button type="submit" className="w-full bg-[#AC1212] hover:bg-[#8a0f0f]" disabled={loading}>
+                            <Button type="submit" className="w-full bg-crimson hover:bg-crimson-dark" disabled={loading}>
                                 {loading ? 'Signing in...' : 'Sign In'}
                             </Button>
                             <p className="text-center text-sm text-muted-foreground">
                                 Don't have an account?{' '}
-                                <Link href="/register" className="font-medium text-[#AC1212] hover:underline">
+                                <Link href="/register" className="font-medium text-crimson hover:underline">
                                     Sign up
                                 </Link>
                             </p>

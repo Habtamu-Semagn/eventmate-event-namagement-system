@@ -3,23 +3,37 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthContext';
-import Navbar from '@/components/Navbar';
+import AuthNavbar from '@/components/AuthNavbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Mail, Save } from 'lucide-react';
+import { User, Mail, Save, LogOut } from 'lucide-react';
 import { userApi } from '@/lib/api';
 
 export default function ProfilePage() {
     const router = useRouter();
-    const { user, userData, signOut, refreshUser } = useAuth();
+    const { user, userData, signOut, refreshUser, loading: authLoading } = useAuth();
     const [displayName, setDisplayName] = useState('');
     const [email, setEmail] = useState('');
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
+
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/login');
+        }
+    }, [user, authLoading, router]);
+
+    // Redirect organizers to their own profile page
+    useEffect(() => {
+        if (user && userData?.role === 'Organizer') {
+            router.push('/organiser/profile');
+        }
+    }, [user, userData, router]);
 
     useEffect(() => {
         if (userData) {
@@ -28,21 +42,22 @@ export default function ProfilePage() {
         }
     }, [userData]);
 
-    if (!user) {
+    // Show loading while checking authentication
+    if (authLoading) {
         return (
             <div className="flex min-h-screen flex-col">
-                <Navbar />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                        <h2 className="text-2xl font-bold mb-4">Please sign in to view your profile</h2>
-                        <Button asChild className="bg-[#AC1212] hover:bg-[#8a0f0f]">
-                            <a href="/login">Sign In</a>
-                        </Button>
-                    </div>
+                <AuthNavbar />
+                <main className="flex-1 flex items-center justify-center mt-16">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-crimson mx-auto"></div>
                 </main>
                 <Footer />
             </div>
         );
+    }
+
+    // Don't render if not authenticated
+    if (!user) {
+        return null;
     }
 
     const handleSubmit = async (e: FormEvent) => {
@@ -63,6 +78,11 @@ export default function ProfilePage() {
         }
     };
 
+    const handleLogout = async () => {
+        await signOut();
+        router.push('/');
+    };
+
     const getInitials = (name: string) => {
         return name
             .split(' ')
@@ -74,8 +94,8 @@ export default function ProfilePage() {
 
     return (
         <div className="flex min-h-screen flex-col">
-            <Navbar />
-            <main className="flex-1 py-8">
+            <AuthNavbar />
+            <main className="flex-1 py-8 mt-16">
                 <div className="container mx-auto px-4">
                     <div className="mx-auto max-w-2xl">
                         <h1 className="mb-8 text-3xl font-bold">My Profile</h1>
@@ -83,7 +103,7 @@ export default function ProfilePage() {
                         <div className="mb-8 flex items-center gap-4">
                             <Avatar className="h-20 w-20">
                                 <AvatarImage src="" alt={userData?.displayName || 'User'} />
-                                <AvatarFallback className="bg-[#AC1212] text-white text-2xl">
+                                <AvatarFallback className="bg-crimson text-white text-2xl">
                                     {userData?.displayName ? getInitials(userData.displayName) : 'U'}
                                 </AvatarFallback>
                             </Avatar>
@@ -136,28 +156,22 @@ export default function ProfilePage() {
                                         />
                                         <p className="text-xs text-muted-foreground">Email cannot be changed</p>
                                     </div>
-                                    <Button type="submit" className="bg-[#AC1212] hover:bg-[#8a0f0f]" disabled={saving}>
-                                        <Save className="mr-2 h-4 w-4" />
-                                        {saving ? 'Saving...' : 'Save Changes'}
-                                    </Button>
+                                    <div className="flex gap-3">
+                                        <Button type="submit" className="bg-crimson hover:bg-crimson-dark" disabled={saving}>
+                                            <Save className="mr-2 h-4 w-4" />
+                                            {saving ? 'Saving...' : 'Save Changes'}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            onClick={handleLogout}
+                                            className="cursor-pointer"
+                                        >
+                                            <LogOut className="mr-2 h-4 w-4" />
+                                            Log Out
+                                        </Button>
+                                    </div>
                                 </form>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="mt-6">
-                            <CardHeader>
-                                <CardTitle>Account Actions</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <Button
-                                    variant="destructive"
-                                    onClick={async () => {
-                                        await signOut();
-                                        router.push('/');
-                                    }}
-                                >
-                                    Sign Out
-                                </Button>
                             </CardContent>
                         </Card>
                     </div>

@@ -138,6 +138,11 @@ const eventValidation = {
             .if(body('ticket_categories').exists())
             .isFloat({ min: 0 })
             .withMessage('Ticket price must be a positive number'),
+        body('ticket_categories.*.capacity')
+            .if(body('ticket_categories').exists())
+            .optional()
+            .isInt({ min: 0 })
+            .withMessage('Ticket capacity must be a positive integer'),
         validate
     ],
     update: [
@@ -250,15 +255,21 @@ const registrationValidation = {
         param('id')
             .isInt({ min: 1 })
             .withMessage('Event ID must be a positive integer'),
-        body('ticket_type')
+        body('ticket_category_id')
+            .isInt({ min: 1 })
+            .withMessage('Ticket category ID is required and must be a positive integer'),
+        body('payment_method')
             .trim()
             .notEmpty()
-            .withMessage('Ticket type is required'),
-        body('payment_method')
-            .optional()
-            .trim()
+            .withMessage('Payment method is required')
             .isLength({ max: 50 })
             .withMessage('Payment method cannot exceed 50 characters'),
+        body('transaction_ref')
+            .trim()
+            .notEmpty()
+            .withMessage('Transaction reference is required')
+            .isLength({ max: 255 })
+            .withMessage('Transaction reference cannot exceed 255 characters'),
         validate
     ]
 };

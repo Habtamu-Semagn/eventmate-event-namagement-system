@@ -438,12 +438,14 @@ router.get('/organizer/stats', authenticate, isOrganizer, async (req, res) => {
 
 /**
  * GET /events/organizer/tickets
- * Get all tickets for the authenticated organizer's events
+ * Get all ticket categories for the authenticated organizer's events
  */
 router.get('/organizer/tickets', authenticate, isOrganizer, async (req, res) => {
     try {
         const { page = 1, limit = 20 } = req.query;
-        const offset = (parseInt(page) - 1) * parseInt(limit);
+        const pageNum = parseInt(page) || 1;
+        const limitNum = parseInt(limit) || 20;
+        const offset = (pageNum - 1) * limitNum;
 
         // Get all event IDs belonging to this organizer
         const eventIdsResult = await db.query(
@@ -457,8 +459,8 @@ router.get('/organizer/tickets', authenticate, isOrganizer, async (req, res) => 
                 data: {
                     tickets: [],
                     pagination: {
-                        page: parseInt(page),
-                        limit: parseInt(limit),
+                        page: pageNum,
+                        limit: limitNum,
                         total: 0,
                         totalPages: 0
                     }
@@ -468,40 +470,83 @@ router.get('/organizer/tickets', authenticate, isOrganizer, async (req, res) => 
 
         const eventIds = eventIdsResult.rows.map(row => row.id);
 
-        // Get total count
+        // Get total count of ticket categories
         const countResult = await db.query(
             `SELECT COUNT(*) 
-             FROM tickets t
-             JOIN registrations r ON t.registration_id = r.id
-             WHERE r.event_id = ANY($1)`,
+             FROM ticket_categories tc
+             WHERE tc.event_id = ANY($1)`,
             [eventIds]
         );
 
         const total = parseInt(countResult.rows[0].count);
 
-        // Get paginated tickets
+        // Get paginated ticket categories with aggregated data
         const result = await db.query(
-            `SELECT t.*, e.title as event_title, e.date as event_date, e.time as event_time,
-                    u.name as user_name, u.email as user_email
-             FROM tickets t
-             JOIN registrations r ON t.registration_id = r.id
-             JOIN events e ON r.event_id = e.id
-             JOIN users u ON r.user_id = u.id
-             WHERE r.event_id = ANY($1)
-             ORDER BY t.created_at DESC
+            `SELECT 
+                tc.id,
+                e.title as event,
+                tc.name as type,
+                COALESCE(tc.price, 0.00) as price,
+                COALESCE(tc.capacity, 0) as capacity,
+                COALESCE(tc.quantity_sold, 0) as quantity_sold,
+                COALESCE(
+                    (SELECT COUNT(*) 
+                     FROM registrations r 
+                     WHERE r.event_id = tc.event_id 
+                     AND r.ticket_type = tc.name
+                     AND r.status IN ('Purchased', 'Confirmed', 'RSVPed')),
+                    0
+                ) as sold,
+                COALESCE(tc.price, 0.00) * COALESCE(
+                    (SELECT COUNT(*) 
+                     FROM registrations r 
+                     WHERE r.event_id = tc.event_id 
+                     AND r.ticket_type = tc.name
+                     AND r.status IN ('Purchased', 'Confirmed', 'RSVPed')),
+                    0
+                ) as revenue
+             FROM ticket_categories tc
+             JOIN events e ON tc.event_id = e.id
+             WHERE tc.event_id = ANY($1)
+             ORDER BY e.title, tc.name
              LIMIT $2 OFFSET $3`,
-            [eventIds, limit, offset]
+            [eventIds, limitNum, offset]
         );
+
+        // Determine status for each ticket category
+        const tickets = result.rows.map(ticket => {
+            let status;
+            const capacity = parseInt(ticket.capacity);
+            const sold = parseInt(ticket.sold);
+            
+            if (capacity > 0 && sold >= capacity) {
+                status = 'soldout';
+            } else if (capacity === 0 && sold === 0) {
+                status = 'draft';
+            } else {
+                status = 'active';
+            }
+
+            return {
+                id: ticket.id,
+                event: ticket.event,
+                type: ticket.type,
+                price: parseFloat(ticket.price),
+                sold: sold,
+                revenue: parseFloat(ticket.revenue),
+                status: status
+            };
+        });
 
         res.json({
             success: true,
             data: {
-                tickets: result.rows,
+                tickets: tickets,
                 pagination: {
-                    page: parseInt(page),
-                    limit: parseInt(limit),
+                    page: pageNum,
+                    limit: limitNum,
                     total,
-                    totalPages: Math.ceil(total / parseInt(limit))
+                    totalPages: Math.ceil(total / limitNum)
                 }
             }
         });
@@ -622,6 +667,7 @@ router.get('/:id/ticket-categories', async (req, res) => {
  */
 router.post('/', authenticate, isOrganizer, eventValidation.create, async (req, res) => {
     try {
+        console.log('Create event request body:', JSON.stringify(req.body, null, 2));
         const {
             title,
             description,
@@ -633,7 +679,10 @@ router.post('/', authenticate, isOrganizer, eventValidation.create, async (req, 
             location_longitude,
             capacity,
             is_paid,
-            image_url
+            image_url,
+            city,
+            country,
+            ticket_categories
         } = req.body;
 
         // Insert event with Pending status (BR-03)
@@ -641,8 +690,8 @@ router.post('/', authenticate, isOrganizer, eventValidation.create, async (req, 
             `INSERT INTO events (
                 title, description, category, date, time,
                 location_venue, location_latitude, location_longitude,
-                organizer_id, status, capacity, is_paid, image_url
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Pending', $10, $11, $12)
+                organizer_id, status, capacity, is_paid, image_url, city, country
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             RETURNING *`,
             [
                 title,
@@ -654,13 +703,32 @@ router.post('/', authenticate, isOrganizer, eventValidation.create, async (req, 
                 location_latitude,
                 location_longitude,
                 req.user.id,
+                'Pending',
                 capacity || 0,
                 is_paid || false,
-                image_url || null
+                image_url || null,
+                city || null,
+                country || null
             ]
         );
 
         const event = result.rows[0];
+
+        // Insert ticket categories if provided
+        if (ticket_categories && Array.isArray(ticket_categories) && ticket_categories.length > 0) {
+            for (const ticketCategory of ticket_categories) {
+                await db.query(
+                    `INSERT INTO ticket_categories (event_id, name, price, capacity)
+                     VALUES ($1, $2, $3, $4)`,
+                    [
+                        event.id,
+                        ticketCategory.name,
+                        ticketCategory.price || 0,
+                        ticketCategory.capacity || 0
+                    ]
+                );
+            }
+        }
 
         // Log event creation
         await logger.log({
@@ -681,9 +749,11 @@ router.post('/', authenticate, isOrganizer, eventValidation.create, async (req, 
         });
     } catch (error) {
         console.error('Create event error:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             success: false,
-            message: 'Error creating event'
+            message: 'Error creating event',
+            error: error.message
         });
     }
 });
@@ -1004,13 +1074,13 @@ router.post('/:id/rsvp', authenticate, registrationValidation.rsvp, async (req, 
 });
 
 /**
- * GET /events/:id/purchase
+ * POST /events/:id/purchase
  * Purchase tickets for paid events (BR-06)
  */
 router.post('/:id/purchase', authenticate, registrationValidation.purchase, async (req, res) => {
     try {
         const { id } = req.params;
-        const { ticket_type, payment_method } = req.body;
+        const { ticket_category_id, payment_method, transaction_ref } = req.body;
 
         // Check if event exists and is approved
         const eventResult = await db.query(
@@ -1041,6 +1111,21 @@ router.post('/:id/purchase', authenticate, registrationValidation.purchase, asyn
             });
         }
 
+        // Get ticket category details
+        const ticketCategoryResult = await db.query(
+            'SELECT * FROM ticket_categories WHERE id = $1 AND event_id = $2',
+            [ticket_category_id, id]
+        );
+
+        if (ticketCategoryResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Ticket category not found for this event'
+            });
+        }
+
+        const ticketCategory = ticketCategoryResult.rows[0];
+
         // Check for duplicate registration
         const existingReg = await db.query(
             'SELECT id FROM registrations WHERE user_id = $1 AND event_id = $2',
@@ -1054,7 +1139,24 @@ router.post('/:id/purchase', authenticate, registrationValidation.purchase, asyn
             });
         }
 
-        // Check capacity
+        // Check ticket category capacity
+        if (ticketCategory.capacity > 0) {
+            const soldCount = await db.query(
+                `SELECT COUNT(*) as count 
+                 FROM registrations 
+                 WHERE event_id = $1 AND ticket_type = $2 AND status IN ('Purchased', 'Confirmed', 'RSVPed')`,
+                [id, ticketCategory.name]
+            );
+
+            if (parseInt(soldCount.rows[0].count) >= ticketCategory.capacity) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'This ticket category is sold out'
+                });
+            }
+        }
+
+        // Check event capacity
         const regCount = await db.query(
             'SELECT COUNT(*) FROM registrations WHERE event_id = $1',
             [id]
@@ -1077,12 +1179,12 @@ router.post('/:id/purchase', authenticate, registrationValidation.purchase, asyn
             });
         }
 
-        // Create registration
+        // Create registration with ticket_type set to ticket category name and Pending status for admin approval
         const regResult = await db.query(
-            `INSERT INTO registrations (user_id, event_id, status) 
-             VALUES ($1, $2, 'Purchased') 
+            `INSERT INTO registrations (user_id, event_id, status, ticket_type, paid_amount, payment_method, transaction_ref) 
+             VALUES ($1, $2, 'Pending', $3, $4, $5, $6) 
              RETURNING *`,
-            [req.user.id, id]
+            [req.user.id, id, ticketCategory.name, ticketCategory.price, payment_method, transaction_ref]
         );
 
         const registrationId = regResult.rows[0].id;
@@ -1090,9 +1192,9 @@ router.post('/:id/purchase', authenticate, registrationValidation.purchase, asyn
         // Create ticket with confirmation (BR-06)
         const ticketResult = await db.query(
             `INSERT INTO tickets (registration_id, ticket_type, price, is_confirmed) 
-             VALUES ($1, $2, $3, TRUE) 
+             VALUES ($1, $2, $3, FALSE) 
              RETURNING *`,
-            [registrationId, ticket_type || 'General', 0] // Price would come from event
+            [registrationId, ticketCategory.name, ticketCategory.price]
         );
 
         // Log purchase
@@ -1104,8 +1206,11 @@ router.post('/:id/purchase', authenticate, registrationValidation.purchase, asyn
             details: {
                 event_id: id,
                 event_title: event.title,
-                ticket_type,
-                payment_method
+                ticket_type: ticketCategory.name,
+                ticket_category_id,
+                payment_method,
+                transaction_ref,
+                amount: ticketCategory.price
             },
             ipAddress: req.ip || req.connection.remoteAddress
         });
@@ -1352,4 +1457,196 @@ router.delete('/:id/favorite', authenticate, async (req, res) => {
     }
 });
 
+/**
+ * PUT /events/ticket-categories/:id
+ * Update a ticket category
+ */
+router.put('/ticket-categories/:id', authenticate, isOrganizer, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, price, capacity } = req.body;
+
+        // Validate input
+        if (!name || name.trim() === '') {
+            return res.status(400).json({
+                success: false,
+                message: 'Name is required'
+            });
+        }
+
+        if (price === undefined || price === null || isNaN(price) || parseFloat(price) < 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Price must be a positive number'
+            });
+        }
+
+        if (capacity === undefined || capacity === null || isNaN(capacity) || parseInt(capacity) < 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Capacity must be a non-negative integer'
+            });
+        }
+
+        // Check if ticket category exists and belongs to organizer's event
+        const checkResult = await db.query(
+            `SELECT tc.*, e.organizer_id 
+             FROM ticket_categories tc
+             JOIN events e ON tc.event_id = e.id
+             WHERE tc.id = $1`,
+            [id]
+        );
+
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Ticket category not found'
+            });
+        }
+
+        if (checkResult.rows[0].organizer_id !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'You do not have permission to update this ticket category'
+            });
+        }
+
+        // Update the ticket category
+        const result = await db.query(
+            `UPDATE ticket_categories 
+             SET name = $1, price = $2, capacity = $3, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $4
+             RETURNING *`,
+            [name.trim(), parseFloat(price), parseInt(capacity), id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Ticket category updated successfully',
+            data: { ticketCategory: result.rows[0] }
+        });
+    } catch (error) {
+        console.error('Update ticket category error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating ticket category'
+        });
+    }
+});
+
+/**
+ * DELETE /events/ticket-categories/:id
+ * Delete a ticket category
+ */
+router.delete('/ticket-categories/:id', authenticate, isOrganizer, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if ticket category exists and belongs to organizer's event
+        const checkResult = await db.query(
+            `SELECT tc.*, e.organizer_id 
+             FROM ticket_categories tc
+             JOIN events e ON tc.event_id = e.id
+             WHERE tc.id = $1`,
+            [id]
+        );
+
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Ticket category not found'
+            });
+        }
+
+        if (checkResult.rows[0].organizer_id !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'You do not have permission to delete this ticket category'
+            });
+        }
+
+        // Check if there are any registrations for this ticket category
+        const registrationsResult = await db.query(
+            `SELECT COUNT(*) as count
+             FROM registrations
+             WHERE event_id = $1 AND ticket_type = $2`,
+            [checkResult.rows[0].event_id, checkResult.rows[0].name]
+        );
+
+        if (parseInt(registrationsResult.rows[0].count) > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot delete ticket category with existing registrations'
+            });
+        }
+
+        // Delete the ticket category
+        await db.query('DELETE FROM ticket_categories WHERE id = $1', [id]);
+
+        res.json({
+            success: true,
+            message: 'Ticket category deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete ticket category error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting ticket category'
+            });
+    }
+});
+
 module.exports = router;
+
+
+/**
+ * GET /events/organizer/tickets/debug
+ * Debug endpoint to check ticket categories and registrations
+ */
+router.get('/organizer/tickets/debug', authenticate, isOrganizer, async (req, res) => {
+    try {
+        // Get organizer's events
+        const eventsResult = await db.query(
+            'SELECT id, title FROM events WHERE organizer_id = $1',
+            [req.user.id]
+        );
+
+        const eventIds = eventsResult.rows.map(row => row.id);
+
+        // Get ticket categories
+        const categoriesResult = await db.query(
+            `SELECT tc.id, tc.event_id, e.title as event_title, tc.name, tc.price, tc.capacity
+             FROM ticket_categories tc
+             JOIN events e ON tc.event_id = e.id
+             WHERE tc.event_id = ANY($1)
+             ORDER BY e.title, tc.name`,
+            [eventIds]
+        );
+
+        // Get registrations
+        const registrationsResult = await db.query(
+            `SELECT r.id, r.event_id, e.title as event_title, r.ticket_type, r.status, r.paid_amount
+             FROM registrations r
+             JOIN events e ON r.event_id = e.id
+             WHERE r.event_id = ANY($1)
+             ORDER BY e.title, r.ticket_type`,
+            [eventIds]
+        );
+
+        res.json({
+            success: true,
+            data: {
+                events: eventsResult.rows,
+                ticketCategories: categoriesResult.rows,
+                registrations: registrationsResult.rows,
+                note: 'Check if ticket_type in registrations matches name in ticket_categories'
+            }
+        });
+    } catch (error) {
+        console.error('Debug tickets error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting debug data'
+        });
+    }
+});

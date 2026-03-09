@@ -1,236 +1,122 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import Hero from '@/components/Hero';
+import Services from '@/components/Services';
+import FeaturedEvents from '@/components/FeaturedEvents';
 import Footer from '@/components/Footer';
-import { Button } from '@/components/ui/button';
-import { Calendar, Users, Ticket, ArrowRight, Star, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import { publicApi, getUser } from '@/lib/api';
+import { motion } from 'motion/react';
+import { useRouter } from 'next/navigation';
 
-export default function Home() {
+export default function App() {
   const router = useRouter();
-  const [stats, setStats] = useState<{ total_users: number, total_events: number, total_registrations: number } | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Redirect logged-in users to their role-specific page
-    const user = getUser();
-    if (user) {
-      switch (user.role) {
-        case 'Administrator':
-          router.replace('/admin');
-          return;
-        case 'Organizer':
-          router.replace('/organiser');
-          return;
-        default:
-          // Registered User -> events page
-          router.replace('/events');
-          return;
-      }
-    }
-
-    // Not logged in — fetch public stats for landing page
-    const fetchStats = async () => {
-      try {
-        const response = await publicApi.getStats();
-        setStats(response.data.stats);
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, [router]);
-
-  const formatNumber = (num: number) => {
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K+';
-    return num.toString();
-  };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Navigation Bar */}
+    <div className="min-h-screen selection:bg-crimson selection:text-white scroll-smooth">
       <Navbar />
+      
+      <main>
+        <section id="home">
+          <Hero />
+        </section>
+        
+        {/* Artistic Divider */}
+        <div className="relative h-24 bg-white overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center opacity-5">
+            <span className="text-9xl font-black font-display whitespace-nowrap">
+              CELEBRATION • VISION • ARTISTRY • EDUCATION • MUSIC • CELEBRATION
+            </span>
+          </div>
+        </div>
 
-      {/* Main Content */}
-      <main className="flex-1">
-        {/* ... (Hero, Features, How It Works sections remain the same) */}
-
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-red-50 to-white dark:from-red-950/20 dark:to-background py-20">
-          <div className="container mx-auto px-4">
-            <div className="mx-auto max-w-3xl text-center">
-              <h1 className="mb-6 text-4xl font-bold tracking-tight text-foreground md:text-6xl">
-                Discover & Manage{' '}
-                <span className="text-[#AC1212]">Amazing Events</span>
-              </h1>
-              <p className="mb-8 text-lg text-muted-foreground">
-                EventMate brings together event organizers and attendees in one seamless platform.
-                Create, discover, and join events that matter to you.
+        <section id="services">
+          <Services />
+        </section>
+        
+        {/* Call to Action Section */}
+        <section id="contact" className="py-20 bg-white overflow-hidden relative">
+          <div className="max-w-7xl mx-auto px-6 md:px-12">
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="crimson-gradient rounded-none p-12 md:p-20 text-center text-white relative overflow-hidden"
+            >
+              {/* Decorative circles */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
+              
+              <h2 className="text-4xl md:text-6xl font-extrabold font-display mb-8 relative z-10">
+                Ready to Create <br />
+                Something <span className="underline decoration-white/30 underline-offset-8">Extraordinary?</span>
+              </h2>
+              <p className="text-white/80 text-lg mb-10 max-w-2xl mx-auto relative z-10">
+                Whether it's a stadium concert or an intimate workshop, we have the tools and expertise to make it flawless.
               </p>
-              <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-                <Button asChild size="lg" className="bg-[#AC1212] hover:bg-[#8a0f0f]">
-                  <Link href="/events">
-                    Explore Events
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/register">Create an Event</Link>
-                </Button>
+              <div className="flex flex-wrap justify-center gap-4 relative z-10">
+                <button 
+                  onClick={() => router.push('/register')}
+                  className="px-10 py-4 rounded-none bg-white text-crimson font-bold hover:bg-slate-100 transition-all transform hover:scale-105 cursor-pointer"
+                >
+                  Get Started Now
+                </button>
+                <button 
+                  onClick={() => window.location.href = 'mailto:hello@eventmate.com'}
+                  className="px-10 py-4 rounded-none border-2 border-white/30 text-white font-bold hover:bg-white/10 transition-all cursor-pointer"
+                >
+                  Contact Sales
+                </button>
               </div>
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="py-20">
-          <div className="container mx-auto px-4">
-            <div className="mb-12 text-center">
-              <h2 className="mb-4 text-3xl font-bold text-foreground">Why Choose EventMate?</h2>
-              <p className="text-muted-foreground">Everything you need to manage and attend events</p>
-            </div>
-
-            <div className="grid gap-8 md:grid-cols-3">
-              {/* Feature 1 */}
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#AC1212]/10">
-                  <Calendar className="h-8 w-8 text-[#AC1212]" />
-                </div>
-                <h3 className="mb-2 text-xl font-semibold text-foreground">Easy Event Creation</h3>
-                <p className="text-muted-foreground">
-                  Create and manage events with our intuitive tools. Set dates, locations, tickets, and more.
-                </p>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#AC1212]/10">
-                  <Users className="h-8 w-8 text-[#AC1212]" />
-                </div>
-                <h3 className="mb-2 text-xl font-semibold text-foreground">Connect with Attendees</h3>
-                <p className="text-muted-foreground">
-                  Build your audience and engage with attendees before, during, and after events.
-                </p>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#AC1212]/10">
-                  <Ticket className="h-8 w-8 text-[#AC1212]" />
-                </div>
-                <h3 className="mb-2 text-xl font-semibold text-foreground">Seamless Ticketing</h3>
-                <p className="text-muted-foreground">
-                  Sell tickets effortlessly with secure payment processing and real-time attendance tracking.
-                </p>
-              </div>
-            </div>
-          </div>
+        <section id="events">
+          <FeaturedEvents />
         </section>
 
-        {/* App Description / How It Works */}
-        <section className="bg-muted/30 py-20">
-          <div className="container mx-auto px-4">
-            <div className="mb-12 text-center">
-              <h2 className="mb-4 text-3xl font-bold text-foreground">How It Works</h2>
-              <p className="text-muted-foreground">Get started in three simple steps</p>
-            </div>
-
-            <div className="grid gap-8 md:grid-cols-3">
-              {/* Step 1 */}
-              <div className="relative rounded-lg border bg-background p-6 shadow-sm">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#AC1212] text-lg font-bold text-white">
-                  1
-                </div>
-                <h3 className="mb-2 text-xl font-semibold text-foreground">Sign Up</h3>
-                <p className="text-muted-foreground">
-                  Create your free account in seconds. Choose to be an event organizer or attendee.
-                </p>
+        {/* Gallery Preview / Artistic Section */}
+        <section id="gallery" className="py-24 bg-white overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 md:px-12">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-[600px]">
+              <div className="col-span-2 row-span-2 rounded-none overflow-hidden group relative">
+                <img 
+                  src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800" 
+                  alt="Crowd" 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
               </div>
-
-              {/* Step 2 */}
-              <div className="relative rounded-lg border bg-background p-6 shadow-sm">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#AC1212] text-lg font-bold text-white">
-                  2
-                </div>
-                <h3 className="mb-2 text-xl font-semibold text-foreground">Discover Events</h3>
-                <p className="text-muted-foreground">
-                  Browse thousands of events across different categories. Find what interests you.
-                </p>
+              <div className="rounded-none overflow-hidden group relative">
+                <img 
+                  src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=400" 
+                  alt="Workshop" 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  referrerPolicy="no-referrer"
+                />
               </div>
-
-              {/* Step 3 */}
-              <div className="relative rounded-lg border bg-background p-6 shadow-sm">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#AC1212] text-lg font-bold text-white">
-                  3
-                </div>
-                <h3 className="mb-2 text-xl font-semibold text-foreground">Join & Enjoy</h3>
-                <p className="text-muted-foreground">
-                  Register for events, save your favorites, and get notified about updates.
-                </p>
+              <div className="rounded-none overflow-hidden group relative">
+                <img 
+                  src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400" 
+                  alt="Music" 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  referrerPolicy="no-referrer"
+                />
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials / Stats */}
-        <section className="py-20">
-          <div className="container mx-auto px-4">
-            <div className="grid gap-8 md:grid-cols-4">
-              <div className="text-center">
-                <div className="mb-2 text-4xl font-bold text-[#AC1212]">
-                  {loading ? <Loader2 className="h-8 w-8 animate-spin mx-auto" /> : formatNumber(stats?.total_events || 0)}
-                </div>
-                <div className="text-muted-foreground">Events Created</div>
+              <div className="col-span-2 rounded-none overflow-hidden group relative">
+                <img 
+                  src="https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=800" 
+                  alt="Conference" 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  referrerPolicy="no-referrer"
+                />
               </div>
-              <div className="text-center">
-                <div className="mb-2 text-4xl font-bold text-[#AC1212]">
-                  {loading ? <Loader2 className="h-8 w-8 animate-spin mx-auto" /> : formatNumber(stats?.total_users || 0)}
-                </div>
-                <div className="text-muted-foreground">Active Users</div>
-              </div>
-              <div className="text-center">
-                <div className="mb-2 text-4xl font-bold text-[#AC1212]">
-                  {loading ? <Loader2 className="h-8 w-8 animate-spin mx-auto" /> : formatNumber(stats?.total_registrations || 0)}
-                </div>
-                <div className="text-muted-foreground">Tickets Sold</div>
-              </div>
-              <div className="text-center">
-                <div className="mb-2 flex justify-center">
-                  <div className="flex text-[#AC1212]">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-current" />
-                    ))}
-                  </div>
-                </div>
-                <div className="text-muted-foreground">Average Rating</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="bg-[#AC1212] py-16">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="mb-4 text-3xl font-bold text-white">Ready to Get Started?</h2>
-            <p className="mb-8 text-white/80">Join thousands of event organizers and attendees today</p>
-            <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-              <Button asChild size="lg" variant="secondary" className="bg-white text-[#AC1212] hover:bg-white/90">
-                <Link href="/register">Sign Up Free</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                <Link href="/login">Sign In</Link>
-              </Button>
             </div>
           </div>
         </section>
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
